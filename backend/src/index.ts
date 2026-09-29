@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { buildHealthResponse, type HealthResponse } from './types/health.js';
 
 dotenv.config();
 
@@ -17,7 +18,8 @@ const sampleTransactions = [
 ];
 
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', app: 'expense-tracker-starter' });
+  const body: HealthResponse = buildHealthResponse();
+  res.json(body);
 });
 
 app.get('/api/transactions', (_req, res) => {
