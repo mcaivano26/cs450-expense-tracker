@@ -17,7 +17,7 @@ const sampleTransactions = [
 ];
 
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', app: 'expense-tracker-starter' });
+  res.json({ status: 'ok', app: 'expense-tracker' });
 });
 
 app.get('/api/transactions', (_req, res) => {
