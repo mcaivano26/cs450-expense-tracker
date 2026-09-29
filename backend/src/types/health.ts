@@ -13,7 +13,7 @@ export interface HealthResponse {
 export function buildHealthResponse(): HealthResponse {
   return {
     status: 'ok',
-    app: 'expense-tracker-starter',
+    app: 'expense-tracker-backend',
     uptimeSeconds: Math.round(process.uptime()),
     timestamp: new Date().toISOString()
   };
