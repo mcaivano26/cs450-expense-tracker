@@ -1,3 +1,12 @@
+import { PrismaClient } from "../node_modules/.prisma/client/client.js";
+import { PrismaPg } from "@prisma/adapter-pg";
+
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL!,
+});
+
+export const prisma = new PrismaClient({ adapter });
+
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -16,8 +25,13 @@ const sampleTransactions = [
   { id: 'txn-3', title: 'Internet', amount: 54.99, category: 'Bills', type: 'expense', date: '2026-08-04' }
 ];
 
+app.get('/api/test', async (_req, res) => {
+  const users = await prisma.user.findMany();
+  res.json(users);
+});
+
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', app: 'expense-tracker-backend' });
+  res.json({ status: 'ok', app: 'expense-tracker' });
 });
 
 app.get('/api/transactions', (_req, res) => {
