@@ -1,17 +1,16 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,
 });
 
 export const prisma = new PrismaClient({ adapter });
-
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT || 4002);
@@ -26,8 +25,13 @@ const sampleTransactions = [
 ];
 
 app.get('/api/test', async (_req, res) => {
-  const users = await prisma.user.findMany();
-  res.json(users);
+  try {
+    const users = await prisma.user.findMany();
+    res.json(users);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json(error);
+  }
 });
 
 app.get('/api/health', (_req, res) => {
