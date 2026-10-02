@@ -64,8 +64,10 @@ cp backend/.env.example backend/.env
 npm --prefix backend install
 npm --prefix frontend install
 docker compose up -d
-npx --prefix backend prisma generate
-npx --prefix backend prisma migrate dev --name init
+cd backend
+npx prisma generate
+npx prisma migrate dev --name init
+cd ..
 ```
 
 The database runs in Docker on port `5434`. The migration command creates the
