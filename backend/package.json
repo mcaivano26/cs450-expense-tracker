@@ -25,8 +25,9 @@
     "typescript": "^5.7.2"
   },
   "allowScripts": {
-    "@prisma": true,
-    "prisma": true,
-    "esbuild": true
+    "@prisma/client": true,
+    "@prisma/engines": true,
+    "esbuild": true,
+    "prisma": true
   }
 }
