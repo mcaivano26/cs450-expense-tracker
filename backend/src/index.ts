@@ -3,6 +3,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { buildHealthResponse, type HealthResponse } from './types/health.js';
 
 dotenv.config();
 
@@ -35,7 +36,8 @@ app.get('/api/test', async (_req, res) => {
 });
 
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', app: 'expense-tracker' });
+  const body: HealthResponse = buildHealthResponse();
+  res.json(body);
 });
 
 app.get('/api/transactions', (_req, res) => {
