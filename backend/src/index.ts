@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { buildHealthResponse, type HealthResponse } from './types/health.js';
+import * as z from "zod"; 
 
 dotenv.config();
 
@@ -13,6 +14,30 @@ const port = Number(process.env.PORT || 4002);
 
 app.use(cors());
 app.use(express.json());
+
+const User = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string(),
+  transactions: z.array(z.string())
+});
+//curl -Uri "http://localhost:4002/api/validateBody" -Method Post -Body '{"type":"User","value":{"id":"foo","name":"bar","email":"baz","transactions":[]}'
+const Transaction = z.object({
+  id: z.string(),
+  userId: z.string(),
+  title: z.string(),
+  amount: z.number(),
+  category: z.string(),
+  date: z.date(),
+  type: z.string().default("expense"),
+  description: z.string().optional(),
+  user: z.string()
+});
+
+const zodMap : any = {
+  'User': User,
+  'Transaction': Transaction
+}
 
 const sampleTransactions = [
   { id: 'txn-1', title: 'Groceries', amount: 86.4, category: 'Food', type: 'expense', date: '2026-08-02' },
@@ -27,6 +52,22 @@ app.get('/api/test', async (_req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json(error);
+  }
+});
+
+/*Invoke-RestMethod
+-Uri "http://localhost:4002/api/validateBody"
+-Method Post -Body '{"type":"User","value":
+{"id":"foo","name":"bar","email":"baz","transactions":["quack"]}}' -ContentType 'application/json'
+*/
+
+app.post('/api/validateBody', (req, res) => {
+  try{
+    res.json(zodMap[req.body['type']]
+             .parse(req.body['value']));
+  }catch(e){
+    console.log(e);
+    res.status(400).json(e);
   }
 });
 
