@@ -17,7 +17,7 @@ app.use(cors());
 app.use(express.json());
 
 const User = z.object({
-  id: z.string(),
+  id: z.string().default(createId()),
   name: z.string(),
   email: z.string(),
   transactions: z.array(z.string())
@@ -29,7 +29,7 @@ const Transaction = z.object({
   title: z.string(),
   amount: z.number(),
   category: z.string(),
-  date: z.date(),
+  date: z.string().datetime(),
   type: z.string().default("expense"),
   description: z.string().optional(),
   user: z.string()
