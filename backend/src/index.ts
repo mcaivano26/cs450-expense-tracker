@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -7,11 +6,7 @@ import { buildHealthResponse, type HealthResponse } from './types/health.js';
 
 dotenv.config();
 
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL!,
-});
-
-export const prisma = new PrismaClient({ adapter });
+export const prisma = new PrismaClient();
 
 const app = express();
 const port = Number(process.env.PORT || 4002);
