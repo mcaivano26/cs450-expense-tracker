@@ -3,7 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { buildHealthResponse, type HealthResponse } from './types/health.js';
-import * as z from "zod"; 
+import * as z from "zod";
+import { createId } from "@paralleldrive/cuid2";
 
 dotenv.config();
 
@@ -21,9 +22,9 @@ const User = z.object({
   email: z.string(),
   transactions: z.array(z.string())
 });
-//curl -Uri "http://localhost:4002/api/validateBody" -Method Post -Body '{"type":"User","value":{"id":"foo","name":"bar","email":"baz","transactions":[]}'
+
 const Transaction = z.object({
-  id: z.string(),
+  id: z.string().default(createId()),
   userId: z.string(),
   title: z.string(),
   amount: z.number(),
