@@ -1,9 +1,12 @@
+import { PrismaClient } from "@prisma/client";
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { buildHealthResponse, type HealthResponse } from './types/health.js';
 
 dotenv.config();
+
+export const prisma = new PrismaClient();
 
 const app = express();
 const port = Number(process.env.PORT || 4002);
@@ -16,6 +19,16 @@ const sampleTransactions = [
   { id: 'txn-2', title: 'Paycheck', amount: 2600, category: 'Income', type: 'income', date: '2026-08-01' },
   { id: 'txn-3', title: 'Internet', amount: 54.99, category: 'Bills', type: 'expense', date: '2026-08-04' }
 ];
+
+app.get('/api/test', async (_req, res) => {
+  try {
+    const users = await prisma.user.findMany();
+    res.json(users);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json(error);
+  }
+});
 
 app.get('/api/health', (_req, res) => {
   const body: HealthResponse = buildHealthResponse();
