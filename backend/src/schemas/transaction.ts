@@ -14,7 +14,7 @@ export const createTransactionSchema = z.object({
   type: z.enum(['expense', 'income']).default('expense'),
   date: z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must look like YYYY-MM-DD')
+    .date('Date must look like YYYY-MM-DD')
     .optional(),
   description: z.string().trim().max(500, 'Description must be 500 characters or fewer').optional()
 });
