@@ -1,4 +1,4 @@
-# Expense Tracker Starter
+# Expense Tracker
 
 A full-stack personal finance dashboard for recording spending, tracking budget health, and reviewing transaction history.
 
@@ -104,7 +104,7 @@ docker compose down
 
 ## Assignment 1 Setup
 
-**Selected starter:** Team J, Expense Tracker (`cs450-expense-tracker-starter`), shared team fork at
+**Selected app:** Team J, Expense Tracker, shared team repository at
 https://github.com/mcaivano26/cs450-expense-tracker-starter
 
 ### Ports
