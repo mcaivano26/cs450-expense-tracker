@@ -51,8 +51,8 @@ Install the following before starting:
 2. Clone your fork, replacing `YOUR-GITHUB-USERNAME` with the account or organization that owns your fork:
 
 ```bash
-git clone https://github.com/YOUR-GITHUB-USERNAME/cs450-expense-tracker-starter.git
-cd cs450-expense-tracker-starter
+git clone https://github.com/YOUR-GITHUB-USERNAME/cs450-expense-tracker.git
+cd cs450-expense-tracker
 ```
 
 ### Configure and start the application
@@ -105,7 +105,7 @@ docker compose down
 ## Assignment 1 Setup
 
 **Selected app:** Team J, Expense Tracker, shared team repository at
-https://github.com/mcaivano26/cs450-expense-tracker-starter
+https://github.com/mcaivano26/cs450-expense-tracker
 
 ### Ports
 
