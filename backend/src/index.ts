@@ -61,7 +61,7 @@ app.post('/api/transactions', validateBody(createTransactionSchema), (req, res) 
     amount,
     category,
     type,
-    date: date ?? new Date().toISOString().slice(0, 10),
+    date: date ?? new Date().toISOString(),
     ...(description ? { description } : {})
   };
 

@@ -14,7 +14,7 @@ export const createTransactionSchema = z.object({
   type: z.enum(['expense', 'income']).default('expense'),
   date: z
     .string()
-    .date('Date must look like YYYY-MM-DD')
+    .datetime({ message: 'Date must be a full date and time like 2026-10-06T12:00:00Z' })
     .optional(),
   description: z.string().trim().max(500, 'Description must be 500 characters or fewer').optional()
 });
