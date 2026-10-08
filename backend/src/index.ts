@@ -2,6 +2,8 @@ import { PrismaClient } from "@prisma/client";
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { createTransactionSchema, type CreateTransactionInput } from './schemas/transaction.js';
+import { validateBody } from './middleware/validateBody.js';
 import { buildHealthResponse, type HealthResponse } from './types/health.js';
 
 dotenv.config();
@@ -51,15 +53,16 @@ app.get('/api/summary', (_req, res) => {
   res.json({ totalIncome, totalExpenses, net: totalIncome - totalExpenses });
 });
 
-app.post('/api/transactions', (req, res) => {
-  const { title, amount, category, type = 'expense', date } = req.body ?? {};
+app.post('/api/transactions', validateBody(createTransactionSchema), (req, res) => {
+  const { title, amount, category, type, date, description } = req.body as CreateTransactionInput;
   const newItem = {
     id: `txn-${Date.now()}`,
-    title: title || 'New transaction',
-    amount: Number(amount || 0),
-    category: category || 'Uncategorized',
+    title,
+    amount,
+    category,
     type,
-    date: date || new Date().toISOString().slice(0, 10)
+    date: date ?? new Date().toISOString().slice(0, 10),
+    ...(description ? { description } : {})
   };
 
   sampleTransactions.push(newItem);
