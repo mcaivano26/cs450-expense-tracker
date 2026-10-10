@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { z } from 'zod';
 
 dotenv.config();
 
@@ -9,6 +10,14 @@ const port = Number(process.env.PORT || 4002);
 
 app.use(cors());
 app.use(express.json());
+
+const expenseSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  amount: z.number().positive('Amount must be greater than 0'),
+  category: z.string().min(1, 'Category is required'),
+  type: z.enum(['expense', 'income']).default('expense'),
+  date: z.string().optional()
+});
 
 const sampleTransactions = [
   { id: 'txn-1', title: 'Groceries', amount: 86.4, category: 'Food', type: 'expense', date: '2026-08-02' },
@@ -37,14 +46,21 @@ app.get('/api/summary', (_req, res) => {
 });
 
 app.post('/api/transactions', (req, res) => {
-  const { title, amount, category, type = 'expense', date } = req.body ?? {};
+  const result = expenseSchema.safeParse(req.body);
+
+  if (!result.success) {
+    res.status(400).json({ error: 'Invalid expense', issues: result.error.issues });
+    return;
+  }
+
+  const { title, amount, category, type, date } = result.data;
   const newItem = {
     id: `txn-${Date.now()}`,
-    title: title || 'New transaction',
-    amount: Number(amount || 0),
-    category: category || 'Uncategorized',
+    title,
+    amount,
+    category,
     type,
-    date: date || new Date().toISOString().slice(0, 10)
+    date: date ?? new Date().toISOString().slice(0, 10)
   };
 
   sampleTransactions.push(newItem);
