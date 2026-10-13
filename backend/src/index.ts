@@ -22,16 +22,6 @@ const sampleTransactions = [
   { id: 'txn-3', title: 'Internet', amount: 54.99, category: 'Bills', type: 'expense', date: '2026-08-04' }
 ];
 
-app.get('/api/test', async (_req, res) => {
-  try {
-    const users = await prisma.user.findMany();
-    res.json(users);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json(error);
-  }
-});
-
 app.get('/api/health', (_req, res) => {
   const body: HealthResponse = buildHealthResponse();
   res.json(body);
