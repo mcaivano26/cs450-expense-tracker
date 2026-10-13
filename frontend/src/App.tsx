@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchSummary, fetchTransactions } from './api/client.ts';
 import type { Summary, Transaction } from './types/api.ts';
+import AddExpenseForm from './components/AddExpenseForm.tsx';
 
 export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -25,6 +26,17 @@ export default function App() {
   useEffect(() => {
     loadData();
   }, []);
+
+  /** Reloads the list and cards after a save, without the full-page "Loading…" screen. */
+  async function refreshAfterSave() {
+    try {
+      const [txns, sum] = await Promise.all([fetchTransactions(), fetchSummary()]);
+      setTransactions(txns);
+      setSummary(sum);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    }
+  }
 
   if (loading) {
     return <div style={{ padding: '2rem' }}>Loading…</div>;
@@ -58,6 +70,8 @@ export default function App() {
           <h2 style={{ margin: '0.5rem 0 0' }}>${summary.net.toFixed(2)}</h2>
         </div>
       </div>
+
+      <AddExpenseForm onSaved={refreshAfterSave} />
 
       <div style={{ background: '#fff', borderRadius: '12px', padding: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
         {transactions.length === 0 && <p style={{ color: '#6b7280' }}>No transactions yet.</p>}
