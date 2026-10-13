@@ -80,7 +80,7 @@ export default function App() {
             <div>
               <strong>{tx.title}</strong>
               <div style={{ color: '#6b7280', fontSize: '0.85rem' }}>
-                {tx.category} · {new Date(tx.date).toLocaleDateString()}
+                {tx.category} · {new Date(tx.date).toLocaleDateString(undefined, { timeZone: 'UTC' })}
               </div>
             </div>
             <div style={{ color: tx.type === 'expense' ? '#dc2626' : '#16a34a', fontWeight: 700 }}>
