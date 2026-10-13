@@ -22,31 +22,27 @@ const sampleTransactions = [
   { id: 'txn-3', title: 'Internet', amount: 54.99, category: 'Bills', type: 'expense', date: '2026-08-04' }
 ];
 
-app.get('/api/test', async (_req, res) => {
-  try {
-    const users = await prisma.user.findMany();
-    res.json(users);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json(error);
-  }
-});
-
 app.get('/api/health', (_req, res) => {
   const body: HealthResponse = buildHealthResponse();
   res.json(body);
 });
 
-app.get('/api/transactions', (_req, res) => {
-  res.json(sampleTransactions);
+app.get('/api/transactions', async (_req, res) => {
+  try{
+    res.json(await prisma.transaction.findMany());
+  }catch(e){
+    res.status(500).json(e);
+  }
 });
 
-app.get('/api/summary', (_req, res) => {
-  const totalExpenses = sampleTransactions
+app.get('/api/summary', async (_req, res) => {
+  const transactions = await prisma.transaction.findMany();
+  
+  const totalExpenses = transactions
     .filter((item) => item.type === 'expense')
     .reduce((sum, item) => sum + Number(item.amount), 0);
 
-  const totalIncome = sampleTransactions
+  const totalIncome = transactions
     .filter((item) => item.type === 'income')
     .reduce((sum, item) => sum + Number(item.amount), 0);
 
