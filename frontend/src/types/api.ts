@@ -16,8 +16,9 @@ export interface Summary {
   net: number;
 }
 
-/** What the Add Expense form sends. amount is undefined when the box is empty. */
-export interface NewExpense {
+/** What the Add Transaction form sends. amount is undefined when the box is empty. */
+export interface NewTransaction {
+  type: TransactionType;
   title: string;
   amount: number | undefined;
   category: string;

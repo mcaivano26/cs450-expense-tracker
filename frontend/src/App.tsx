@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchSummary, fetchTransactions } from './api/client.ts';
 import type { Summary, Transaction } from './types/api.ts';
-import AddExpenseForm from './components/AddExpenseForm.tsx';
+import AddTransactionForm from './components/AddTransactionForm.tsx';
 
 export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -71,7 +71,7 @@ export default function App() {
         </div>
       </div>
 
-      <AddExpenseForm onSaved={refreshAfterSave} />
+      <AddTransactionForm onSaved={refreshAfterSave} />
 
       <div style={{ background: '#fff', borderRadius: '12px', padding: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
         {transactions.length === 0 && <p style={{ color: '#6b7280' }}>No transactions yet.</p>}
