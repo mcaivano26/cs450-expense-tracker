@@ -1,0 +1,63 @@
+== Valid requests (expect 201) ==
+PASS  [201] valid expense
+      request:  {"title":"Coffee","amount":4.5,"category":"Food","type":"expense","date":"2026-10-13T12:00:00Z"}
+      response: {"id":"cmv7gra9w00024zjejyge9sj8","userId":"cmv7561b200004zmdw72l075a","title":"Coffee","amount":4.5,"category":"Food","date":"2026-10-13T12:00:00.000Z","type":"expense","description":null}
+
+PASS  [201] valid income
+      request:  {"title":"Paycheck","amount":1200,"category":"Salary","type":"income","date":"2026-10-13T12:00:00Z"}
+      response: {"id":"cmv7grab900054zjey2edtjb1","userId":"cmv7561b200004zmdw72l075a","title":"Paycheck","amount":1200,"category":"Salary","date":"2026-10-13T12:00:00.000Z","type":"income","description":null}
+
+PASS  [201] type and date are optional
+      request:  {"title":"Snack","amount":2,"category":"Food"}
+      response: {"id":"cmv7grac700084zjeizrhkjtt","userId":"cmv7561b200004zmdw72l075a","title":"Snack","amount":2,"category":"Food","date":"2026-10-14T02:01:12.727Z","type":"expense","description":null}
+
+PASS  [201] title gets trimmed
+      request:  {"title":"   Bus pass   ","amount":25,"category":"Transport"}
+      response: {"id":"cmv7grad5000b4zjexumdl1qx","userId":"cmv7561b200004zmdw72l075a","title":"Bus pass","amount":25,"category":"Transport","date":"2026-10-14T02:01:12.760Z","type":"expense","description":null}
+
+== Invalid requests (expect 400 with field errors) ==
+PASS  [400] missing title
+      request:  {"amount":4.5,"category":"Food"}
+      response: {"error":"Validation failed","issues":[{"field":"title","message":"Required"}]}
+
+PASS  [400] empty title
+      request:  {"title":"","amount":4.5,"category":"Food"}
+      response: {"error":"Validation failed","issues":[{"field":"title","message":"Title is required"}]}
+
+PASS  [400] title over 100 characters
+      request:  {"title":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","amount":4.5,"category":"Food"}
+      response: {"error":"Validation failed","issues":[{"field":"title","message":"Title must be 100 characters or fewer"}]}
+
+PASS  [400] negative amount
+      request:  {"title":"Coffee","amount":-5,"category":"Food"}
+      response: {"error":"Validation failed","issues":[{"field":"amount","message":"Amount must be greater than 0"}]}
+
+PASS  [400] amount is zero
+      request:  {"title":"Coffee","amount":0,"category":"Food"}
+      response: {"error":"Validation failed","issues":[{"field":"amount","message":"Amount must be greater than 0"}]}
+
+PASS  [400] amount sent as text
+      request:  {"title":"Coffee","amount":"4.50","category":"Food"}
+      response: {"error":"Validation failed","issues":[{"field":"amount","message":"Amount must be a number"}]}
+
+PASS  [400] amount over 1,000,000
+      request:  {"title":"Car","amount":1000001,"category":"Transport"}
+      response: {"error":"Validation failed","issues":[{"field":"amount","message":"Amount must be 1,000,000 or less"}]}
+
+PASS  [400] missing category
+      request:  {"title":"Coffee","amount":4.5}
+      response: {"error":"Validation failed","issues":[{"field":"category","message":"Required"}]}
+
+PASS  [400] type not expense or income
+      request:  {"title":"Coffee","amount":4.5,"category":"Food","type":"refund"}
+      response: {"error":"Validation failed","issues":[{"field":"type","message":"Invalid enum value. Expected 'expense' | 'income', received 'refund'"}]}
+
+PASS  [400] date not a full date-time
+      request:  {"title":"Coffee","amount":4.5,"category":"Food","date":"10/13/2026"}
+      response: {"error":"Validation failed","issues":[{"field":"date","message":"Date must be a full date and time like 2026-10-06T12:00:00Z"}]}
+
+PASS  [400] several problems at once
+      request:  {"title":"","amount":-1}
+      response: {"error":"Validation failed","issues":[{"field":"title","message":"Title is required"},{"field":"amount","message":"Amount must be greater than 0"},{"field":"category","message":"Required"}]}
+
+== Result: 15 passed, 0 failed ==
