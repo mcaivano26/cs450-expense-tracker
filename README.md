@@ -156,3 +156,13 @@ Environment: macOS 26.6.2, Node v24.21.0, npm 11.19.0, Git 2.50.1 (Apple Git-155
 - Added `backend/src/types/health.ts` with a `HealthResponse` interface and a `buildHealthResponse()` helper.
 - `GET /api/health` now returns a value typed as `HealthResponse`, which adds `uptimeSeconds` and `timestamp`.
 - Verified with `npm --prefix backend run build`, then by starting the backend and opening http://localhost:4002/api/health.
+
+## Architecture and Schema
+
+Full diagrams and decisions: [docs/architecture.md](docs/architecture.md)
+
+- **Flow:** User → browser → React frontend (dashboard + Add a transaction form) → REST / JSON → Express backend → Prisma → PostgreSQL in Docker.
+- **Validation:** `POST` requests go through a reusable Zod `validateBody` middleware; bad input returns `400` with field errors that the form shows under each field.
+- **Schema (Sprint 1):** `User` has many `Transaction`s. Income and expenses share one `Transaction` table with a `type` field, so totals and net balance are simple queries.
+- **Next:** `Category` and `Budget` tables, Login with JWT, edit and filter transactions.
+- **Workflow:** every branch and PR title starts with its Jira key (F26B-xx).
