@@ -6,22 +6,27 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "zod": "^3.25.76"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/cors": "^2.8.5",
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.2",
-    "prisma": "^6.19.3",
+    "@types/supertest": "^7.2.1",
+    "prisma": "^6.12.0",
+    "supertest": "^7.3.1",
     "tsx": "^4.19.1",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^5.0.5"
   },
   "allowScripts": {
     "@prisma/client": true,
