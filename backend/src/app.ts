@@ -1,20 +1,15 @@
 import { PrismaClient } from "@prisma/client";
 import express from 'express';
 import cors from 'cors';
-import { createTransactionSchema, type CreateTransactionInput } from './schemas/transaction.js';
+import {
+  createTransactionSchema,
+  updateTransactionSchema,
+  type CreateTransactionInput,
+  type UpdateTransactionInput
+} from './schemas/transaction.js';
+import { validateBody } from './middleware/validateBody.js';
 import { getDemoUserId } from './demoUser.js';
 import { buildHealthResponse, type HealthResponse } from './types/health.js';
-
-const validateBody = (schema: typeof createTransactionSchema): express.RequestHandler =>
-  (req, res, next) => {
-    const result = schema.safeParse(req.body);
-    if (!result.success) {
-      res.status(400).json({ error: 'Invalid request body', details: result.error.flatten() });
-      return;
-    }
-    req.body = result.data;
-    next();
-  };
 
 export const prisma = new PrismaClient();
 
@@ -87,5 +82,42 @@ app.post('/api/transactions', validateBody(createTransactionSchema), async (req,
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Could not save transaction' });
+  }
+});
+
+// F26B-32: edit an existing transaction.
+app.put('/api/transactions/:id', validateBody(updateTransactionSchema), async (req, res) => {
+  const changes = req.body as UpdateTransactionInput;
+
+  if (Object.keys(changes).length === 0) {
+    res.status(400).json({ error: 'Provide at least one field to update' });
+    return;
+  }
+
+  try {
+    const userId = await getDemoUserId(prisma);
+    const existing = await prisma.transaction.findFirst({
+            where: { id: String(req.params.id), userId }
+    });
+
+    if (!existing) {
+      res.status(404).json({ error: 'Transaction not found' });
+      return;
+    }
+
+    const { date, description, ...rest } = changes;
+    const updated = await prisma.transaction.update({
+      where: { id: existing.id },
+      data: {
+        ...rest,
+        ...(date !== undefined && { date: new Date(date) }),
+        ...(description !== undefined && { description: description || null })
+      }
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Could not update transaction' });
   }
 });

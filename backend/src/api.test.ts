@@ -16,6 +16,33 @@ describe('POST /api/transactions', () => {
     const response = await request(app).post('/api/transactions').send({});
 
     expect(response.status).toBe(400);
-    expect(response.body.error).toBe('Invalid request body');
+    expect(response.body.error).toBe('Validation failed');
+  });
+});
+
+describe('PUT /api/transactions/:id', () => {
+  test('rejects invalid data with 400', async () => {
+    const response = await request(app)
+      .put('/api/transactions/any-id')
+      .send({ amount: 'not-a-number' });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe('Validation failed');
+  });
+
+  test('rejects an empty update with 400', async () => {
+    const response = await request(app).put('/api/transactions/any-id').send({});
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe('Provide at least one field to update');
+  });
+
+  test('returns 404 for a transaction that does not exist', async () => {
+    const response = await request(app)
+      .put('/api/transactions/does-not-exist')
+      .send({ title: 'Coffee' });
+
+    expect(response.status).toBe(404);
+    expect(response.body.error).toBe('Transaction not found');
   });
 });
