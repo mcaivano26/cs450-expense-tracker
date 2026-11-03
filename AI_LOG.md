@@ -49,3 +49,17 @@ For the TypeScript change it suggested a typed health-check response: a `HealthR
 - Tool: Claude
 - Used for: setting up Vitest + Supertest, splitting app.ts/index.ts, writing API tests, building the repeatable transaction data generator, implementing PUT /api/transactions/:id with Zod validation, writing the repeatable seed script, and writing seed repeatability and boundary tests.
 - Verified by: running npm test, npm run generate:data, npx prisma db seed (twice, same count), and manual curl requests against the running backend. I reviewed and adjusted generated code, for example fixing the expected error message to match the real validateBody middleware.
+
+## Sharon Johnson (SharonSusan77): Sprint 2, F26B-53 and F26B-54
+
+**Prompt/request:** I asked Claude (Anthropic) to help me verify F26B-32 (Edit a transaction) against its acceptance
+criteria, write tests that prove a valid edit is really saved, and update the architecture diagram for Sprint 2.
+
+**AI response summary:** Claude reviewed the merged PUT route and its tests, pointed out that only error cases were
+tested and that there is no edit form in the frontend, and drafted database tests that read the saved row back from
+PostgreSQL, a verification report, the new edit and seed diagrams, and a fix for the missing POSTGRES variables in
+the root .env.example.
+
+**How I verified it:** I ran npm test with the database running and all 21 tests passed, including the 7 new edit
+verification tests. I checked that the new diagrams render on GitHub and that docker compose starts the database
+with the updated .env.example.
