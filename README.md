@@ -182,3 +182,27 @@ Full diagrams and decisions: [docs/architecture.md](docs/architecture.md)
 |---|---|---|
 | Startup Order | `api` waits for `db` healthcheck | Process running != DB connection ready |
 | Network Bridge | `web` reaches `api:4002` | Docker Compose virtual network DNS |
+
+## Seeding and sample data
+
+Start the database first (from the project root):
+
+```bash
+docker compose up -d
+```
+
+Seed the database. It is safe to run more than once: it removes its own sample rows and re-creates them, so there are no duplicates.
+
+```bash
+cd backend
+npx prisma db seed      # or: npm run seed
+```
+
+Generate a large set of repeatable sample transactions to files:
+
+```bash
+npm --prefix backend run generate:data            # 1,000 transactions, seed 42
+npm --prefix backend run generate:data -- 50000 7 # 50,000 transactions, seed 7
+```
+
+Output goes to `backend/data/transactions.json` and `backend/data/transactions.csv` (git-ignored).

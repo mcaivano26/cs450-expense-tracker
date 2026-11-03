@@ -44,3 +44,8 @@ For the TypeScript change it suggested a typed health-check response: a `HealthR
   sample transactions, so the frontend was getting data from the backend.
 - `http://localhost:4002/` showed "Cannot GET /", which is expected because the backend has no route at `/`.
 - `git check-ignore` confirmed that `backend/.env` and `backend/dist` will not be committed.
+
+## 2026-11-02 - Jovhems (F26B-72, F26B-73, F26B-32, F26B-30)
+- Tool: Claude
+- Used for: setting up Vitest + Supertest, splitting app.ts/index.ts, writing API tests, building the repeatable transaction data generator, implementing PUT /api/transactions/:id with Zod validation, writing the repeatable seed script, and writing seed repeatability and boundary tests.
+- Verified by: running npm test, npm run generate:data, npx prisma db seed (twice, same count), and manual curl requests against the running backend. I reviewed and adjusted generated code, for example fixing the expected error message to match the real validateBody middleware.
