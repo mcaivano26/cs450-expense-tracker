@@ -46,3 +46,23 @@ describe('PUT /api/transactions/:id', () => {
     expect(response.body.error).toBe('Transaction not found');
   });
 });
+
+describe('amount boundary (PUT /api/transactions/:id)', () => {
+  test('rejects an amount just over the 1,000,000 limit', async () => {
+    const response = await request(app)
+      .put('/api/transactions/any-id')
+      .send({ amount: 1_000_001 });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe('Validation failed');
+  });
+
+  test('accepts an amount of exactly 1,000,000 (passes validation)', async () => {
+    const response = await request(app)
+      .put('/api/transactions/does-not-exist')
+      .send({ amount: 1_000_000 });
+
+    // Validation passed, so the request reaches the lookup and gets 404, not 400.
+    expect(response.status).toBe(404);
+  });
+});
