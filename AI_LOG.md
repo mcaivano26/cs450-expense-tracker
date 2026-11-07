@@ -63,3 +63,8 @@ the root .env.example.
 **How I verified it:** I ran npm test with the database running and all 21 tests passed, including the 7 new edit
 verification tests. I checked that the new diagrams render on GitHub and that docker compose starts the database
 with the updated .env.example.
+
+## 2026-11-07 - Max Caivano - Sprint 3 F26B-32
+Used ChatGPT Codex.
+Prompted to create frontend UI for the transactions PUT request. Created a new edit transaction form component. Then prompted to create a shared transaction form component to be wrapped by add and edit forms, to reduce code redundancy.
+Ran backend and frontend and did several simple tests, including invalid inputs. Invalid inputs were rejected and successful updates updated all components accordingly. Seems to be functional.
