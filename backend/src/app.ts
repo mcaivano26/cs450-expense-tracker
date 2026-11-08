@@ -120,4 +120,4 @@ app.put('/api/transactions/:id', validateBody(updateTransactionSchema), async (r
     console.error(error);
     res.status(500).json({ error: 'Could not update transaction' });
   }
-});const ciFailureDemo = "intentional lint error";
+});
