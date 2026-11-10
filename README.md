@@ -206,3 +206,13 @@ npm --prefix backend run generate:data -- 50000 7 # 50,000 transactions, seed 7
 ```
 
 Output goes to `backend/data/transactions.json` and `backend/data/transactions.csv` (git-ignored).
+
+## CI/CD Setup
+
+Every pull request into `main` runs `.github/workflows/ci.yml` on GitHub Actions. Merge only when both jobs are green.
+
+- **Backend:** `npm ci`, `npm run lint` (ESLint), then `npm test` against a temporary PostgreSQL 16 database that exists only during the run.
+- **Frontend:** `npm ci`, then `npm run build` (type-check and build; no tests yet).
+- Read-only access (`contents: read`), Node 22 (required by Vitest 5).
+
+**Reading a failed run:** on the PR, click **Details** next to the red X, open the failed job, and click the first red step. Fix that first error; later steps are skipped, not broken. Lint errors show `file line:column` and the rule name; test failures show the test name with `Expected` vs `Received`. Reproduce it locally with `npm run lint` or `npm test`, fix it, and push. CI reruns automatically.
