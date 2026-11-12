@@ -5,11 +5,14 @@ import globals from 'globals';
 
 export default tseslint.config(
   // Folders that are generated or installed, not written by us
-  { ignores: ['dist/', 'node_modules/', 'data/'] },
+  { ignores: ['dist/', 'node_modules/', 'data/', 'prisma/migrations/'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
     files: ['**/*.ts'],
-    languageOptions: { globals: globals.node }
-  }
+    languageOptions: { globals: { ...globals.node } },
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'warn',
+    },
+  },
 );
