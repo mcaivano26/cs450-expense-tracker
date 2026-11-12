@@ -206,3 +206,32 @@ npm --prefix backend run generate:data -- 50000 7 # 50,000 transactions, seed 7
 ```
 
 Output goes to `backend/data/transactions.json` and `backend/data/transactions.csv` (git-ignored).
+
+## CI/CD Setup
+
+This repository uses **GitHub Actions** for continuous integration. The workflow is defined in `.github/workflows/ci.yml`.
+
+### What the workflow does
+- **Trigger:** runs automatically on every pull request that targets `main`. No manual steps are needed.
+- **Permissions:** read-only access to the repository (`contents: read`). No repository secrets are used.
+- **Backend job** (Ubuntu, Node.js 22):
+  1. Starts a temporary **PostgreSQL 16** service container with throwaway CI-only credentials.
+  2. `npm ci`: clean install from `package-lock.json`.
+  3. `npx prisma generate`: builds the Prisma client.
+  4. `npm run lint`: ESLint with TypeScript rules (`backend/eslint.config.js`).
+  5. `npx prisma migrate deploy`: applies migrations to the CI database.
+  6. `npm test`: runs the Vitest suite, including API and database tests.
+- **Frontend job** (runs in parallel): `npm ci` → lint/test if those scripts exist → `npm run build` (TypeScript type-check plus Vite build).
+- If any step fails, the remaining steps in that job are skipped and the pull request shows a red ❌.
+
+### How to read a failed run
+1. On the pull request, click **Details** next to the failed check, or open the **Actions** tab and select the run.
+2. Click the failed job: **Backend** or **Frontend**.
+3. Expand the step with the red ❌. Steps after it are greyed out (skipped).
+4. Read the **first** error. Later errors are usually side effects.
+   - **Lint:** `file:line:column  error  message  rule-name`. Open that file and line.
+   - **Tests:** the failing test name with **Expected** and **Received** values.
+   - **Migrations/database:** usually a migration that doesn't match `schema.prisma`.
+   - **Install:** usually an out-of-date `package-lock.json`. Run `npm install` locally and commit the lockfile.
+5. Reproduce locally with the same command in the same folder, for example `cd backend && npm run lint`.
+6. Fix, commit and push to the same branch. The workflow re-runs automatically.
