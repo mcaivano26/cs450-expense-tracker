@@ -1,22 +1,29 @@
+# CI for the Expense Tracker (Assignment 2, Sharon Johnson)
+# Runs on every pull request into main. Node 22 because Vitest 5 requires Node 22.12 or newer.
+# Two jobs run side by side:
+#   backend:  install -> lint -> prepare database -> run the test suite
+#   frontend: install -> type-check and build (the frontend has no tests yet)
 name: CI
 
 on:
   pull_request:
     branches: [main]
 
+# The workflow only needs to read the code, never change it.
 permissions:
   contents: read
 
 jobs:
   backend:
-    name: Backend (install, lint, test)
+    name: Backend - install, lint, test
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
 
-    # Temporary PostgreSQL database that exists only during this CI run.
-    # These are throwaway CI-only credentials, not real secrets.
+    # The database tests (seed repeatability, edit verification) need PostgreSQL.
+    # This starts a throwaway PostgreSQL 16 container that exists only during this run.
+    # The username and password are CI-only test values, not real secrets.
     services:
       postgres:
         image: postgres:16
@@ -39,7 +46,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -49,20 +56,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate Prisma client
-        run: npx prisma generate
-
       - name: Lint
         run: npm run lint
 
-      - name: Apply database migrations
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Create database tables
         run: npx prisma migrate deploy
 
       - name: Run tests
         run: npm test
 
   frontend:
-    name: Frontend (install, build)
+    name: Frontend - install, build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -71,7 +78,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
