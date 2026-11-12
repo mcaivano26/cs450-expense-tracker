@@ -64,6 +64,28 @@ the root .env.example.
 verification tests. I checked that the new diagrams render on GitHub and that docker compose starts the database
 with the updated .env.example.
 
+## Sharon Johnson (SharonSusan77): Assignment 2, CI with GitHub Actions
+
+**Prompt/request:** I asked Claude (Anthropic) to help me add a GitHub Actions workflow that runs lint and the backend tests on pull requests.
+
+**AI response summary:** Claude noted the backend had no lint script (so we added ESLint), the tests need PostgreSQL (so the workflow starts a temporary postgres service), and Vitest 5 needs Node 22. It drafted ci.yml and the ESLint config.
+
+**what I verified:** npm run lint passed locally; on the PR I confirmed CI fails on an intentionally broken test and passes after the fix, and updated the readme .
+
+## Assignment 2: GitHub Actions CI/CD Pipeline (Jovhems)
+
+- **Date:** 2026-11-08
+- **Tool:** Claude (Anthropic)
+- **Purpose:** Help setting up the CI workflow, adding ESLint to the backend, writing the README "CI/CD Setup" section, and planning the failing and passing runs.
+- **What I asked:** How to create a GitHub Actions workflow that installs dependencies, lints and runs tests for our backend (Express + Prisma + PostgreSQL + Vitest) and frontend (React + Vite) on pull requests.
+- **What the AI produced:** A draft `ci.yml` with a PostgreSQL service container, an ESLint flat config and lint script for the backend, a README section, and a suggested intentional lint violation for the failure demo.
+- **What I verified or changed:**
+  - Checked our real `package.json` scripts, Prisma provider and `docker-compose.yml` before writing the workflow.
+  - Confirmed `backend/.env` is ignored by git; the CI database uses throwaway credentials only.
+  - Ran `npm run lint` locally before pushing.
+  - Confirmed a failing run and a passing run on the Actions tab.
+- **Reflection:** CI stops at the first failing step, so the earliest error in the log is the one to fix. Running tests against a fresh database in CI also caught tests that only pass when a local database happens to be running.
+
 ## 2026-11-07 - Max Caivano - Sprint 3 F26B-32
 Used ChatGPT Codex.
 Prompted to create frontend UI for the transactions PUT request. Created a new edit transaction form component. Then prompted to create a shared transaction form component to be wrapped by add and edit forms, to reduce code redundancy.
