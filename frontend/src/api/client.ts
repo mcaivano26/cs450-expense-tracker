@@ -28,10 +28,32 @@ export async function createTransaction(input: NewTransaction): Promise<FieldIss
       description: input.description || undefined
     })
   });
-  if (response.status === 201) return null;
+  if (response.ok) return null;
   if (response.status === 400) {
     const body = await response.json();
     return body.issues ?? [{ field: '', message: body.error ?? 'Validation failed' }];
   }
+  return [{ field: '', message: 'Something went wrong saving. Is the backend running?' }];
+}
+
+/** Updates a transaction. Returns null on success or list of field problems*/
+export async function updateTransaction(id: string, input: NewTransaction): Promise<FieldIssue[] | null> {
+  const response = await fetch(`/api/transactions/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...input,
+      // API expects a full date-time
+      date: `${input.date}T12:00:00Z`,
+      description: input.description || undefined
+    })
+  });
+
+  if (response.ok) return null;
+  if (response.status === 400) {
+    const body = await response.json();
+    return body.issues ?? [{ field: '', message: body.error ?? 'Validation failed' }];
+  }
+  if (response.status === 404) return [{ field: '', message: 'This transaction no longer exists.' }];
   return [{ field: '', message: 'Something went wrong saving. Is the backend running?' }];
 }

@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { fetchSummary, fetchTransactions } from './api/client.ts';
 import type { Summary, Transaction } from './types/api.ts';
 import AddTransactionForm from './components/AddTransactionForm.tsx';
+import EditTransactionForm from './components/EditTransactionForm.tsx';
 
 export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   async function loadData() {
     setLoading(true);
@@ -33,6 +35,7 @@ export default function App() {
       const [txns, sum] = await Promise.all([fetchTransactions(), fetchSummary()]);
       setTransactions(txns);
       setSummary(sum);
+      setEditingTransaction(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     }
@@ -74,6 +77,7 @@ export default function App() {
       <AddTransactionForm onSaved={refreshAfterSave} />
 
       <div style={{ background: '#fff', borderRadius: '12px', padding: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+        {editingTransaction && <EditTransactionForm key={editingTransaction.id} transaction={editingTransaction} onSaved={refreshAfterSave} onCancel={() => setEditingTransaction(null)} />}
         {transactions.length === 0 && <p style={{ color: '#6b7280' }}>No transactions yet.</p>}
         {transactions.map((tx) => (
           <div key={tx.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderBottom: '1px solid #e5e7eb' }}>
@@ -83,8 +87,11 @@ export default function App() {
                 {tx.category} · {new Date(tx.date).toLocaleDateString(undefined, { timeZone: 'UTC' })}
               </div>
             </div>
-            <div style={{ color: tx.type === 'expense' ? '#dc2626' : '#16a34a', fontWeight: 700 }}>
-              {tx.type === 'expense' ? '-' : '+'}${tx.amount.toFixed(2)}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ color: tx.type === 'expense' ? '#dc2626' : '#16a34a', fontWeight: 700 }}>
+                {tx.type === 'expense' ? '-' : '+'}${tx.amount.toFixed(2)}
+              </div>
+              <button type="button" onClick={() => setEditingTransaction(tx)} style={{ background: '#fff', color: '#2563eb', border: '1px solid #93c5fd', borderRadius: 6, padding: '0.35rem 0.65rem', cursor: 'pointer' }}>Edit</button>
             </div>
           </div>
         ))}

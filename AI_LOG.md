@@ -85,3 +85,8 @@ with the updated .env.example.
   - Ran `npm run lint` locally before pushing.
   - Confirmed a failing run and a passing run on the Actions tab.
 - **Reflection:** CI stops at the first failing step, so the earliest error in the log is the one to fix. Running tests against a fresh database in CI also caught tests that only pass when a local database happens to be running.
+
+## 2026-11-07 - Max Caivano - Sprint 3 F26B-32
+Used ChatGPT Codex.
+Prompted to create frontend UI for the transactions PUT request. Created a new edit transaction form component. Then prompted to create a shared transaction form component to be wrapped by add and edit forms, to reduce code redundancy.
+Ran backend and frontend and did several simple tests, including invalid inputs. Invalid inputs were rejected and successful updates updated all components accordingly. Seems to be functional.
