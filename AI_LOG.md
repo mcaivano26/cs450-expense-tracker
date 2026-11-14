@@ -85,3 +85,8 @@ with the updated .env.example.
   - Ran `npm run lint` locally before pushing.
   - Confirmed a failing run and a passing run on the Actions tab.
 - **Reflection:** CI stops at the first failing step, so the earliest error in the log is the one to fix. Running tests against a fresh database in CI also caught tests that only pass when a local database happens to be running.
+
+## 2026-11-14 Max Caivano Assignment 2
+ChatGPT Codex.
+Asked to generate tests for the frontend. Generated tests for the client api. Asked to also generate tests for tsx components. Added more tests to main file and generated a separate one for the transaction form file.
+All generated tests passed. Produced a warning suggesting to add isolate: false to config, which I did.
