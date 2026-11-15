@@ -1,5 +1,6 @@
-import { Prisma, type PrismaClient } from '@prisma/client';
 import { Router } from 'express';
+import { type PrismaClient } from '@prisma/client';
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { validateBody } from '../middleware/validateBody.js';
 import { loginSchema, registerSchema, type LoginInput, type RegisterInput } from '../schemas/auth.js';
 import {
@@ -10,46 +11,48 @@ import {
   verifyPassword
 } from '../auth.js';
 
-/** The only fields of a User that an API response may contain. Never includes passwordHash. */
-export const publicUserSelect = { id: true, name: true, email: true } as const;
+// The only User fields an API response may contain. passwordHash is never selected.
+export const publicUserFields = { id: true, name: true, email: true } as const;
 
-export const DUPLICATE_EMAIL_ERROR = 'An account with this email already exists';
+export const DUPLICATE_EMAIL = 'An account with this email already exists';
 
 /** Same body for an unknown email and a wrong password, so a response never reveals which one was wrong. */
-export const INVALID_LOGIN_ERROR = 'Invalid email or password';
+export const INVALID_LOGIN = 'Invalid email or password';
 
 export function createAuthRouter(prisma: PrismaClient): Router {
   const router = Router();
 
-  router.post('/register', validateBody(registerSchema), async (req, res) => {
+  router.post('/api/auth/register', validateBody(registerSchema), async (req, res) => {
+    // validateBody already trimmed the name and normalized the email.
     const { name, email, password } = req.body as RegisterInput;
 
     try {
       const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
       if (existing) {
-        res.status(409).json({ error: DUPLICATE_EMAIL_ERROR });
+        res.status(409).json({ error: DUPLICATE_EMAIL });
         return;
       }
 
       const passwordHash = await hashPassword(password);
       const user = await prisma.user.create({
         data: { name, email, passwordHash },
-        select: publicUserSelect
+        select: publicUserFields
       });
 
-      res.status(201).json({ user });
+      res.status(201).json( user );
     } catch (error) {
-      // Two registrations for the same email at the same moment: the unique index stops the second one.
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        res.status(409).json({ error: DUPLICATE_EMAIL_ERROR });
+      // Two sign-ups with the same email at the same moment: the database's unique
+      // constraint stops the second one (Prisma error P2002), and it gets the same 409.
+      if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
+        res.status(409).json({ error: DUPLICATE_EMAIL });
         return;
       }
       console.error(error);
-      res.status(500).json({ error: 'Could not register' });
+      res.status(500).json({ error: 'Could not create account' });
     }
   });
 
-  router.post('/login', validateBody(loginSchema), async (req, res) => {
+  router.post('/api/auth/login', validateBody(loginSchema), async (req, res) => {
     const { email, password } = req.body as LoginInput;
 
     try {
@@ -62,7 +65,7 @@ export function createAuthRouter(prisma: PrismaClient): Router {
       const passwordMatches = await verifyPassword(password, user?.passwordHash ?? TIMING_EQUALIZER_HASH);
 
       if (!user || !user.passwordHash || !passwordMatches) {
-        res.status(401).json({ error: INVALID_LOGIN_ERROR });
+        res.status(401).json({ error: INVALID_LOGIN });
         return;
       }
 

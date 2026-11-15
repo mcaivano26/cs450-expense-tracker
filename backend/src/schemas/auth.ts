@@ -9,23 +9,27 @@ const normalizedEmail = z
   .trim()
   .toLowerCase();
 
-/** bcrypt only uses the first 72 bytes of a password, so longer ones are rejected instead of silently cut. */
-const BCRYPT_MAX_BYTES = 72;
-
-/** Rules for the JSON body of POST /api/auth/register. */
+/**
+ * F26B-59: rules for the JSON body of POST /api/auth/register.
+ * Zod runs these before the route, so the route only ever sees clean data.
+ */
 export const registerSchema = z.object({
   name: z
     .string({ required_error: 'Name is required', invalid_type_error: 'Name must be text' })
     .trim()
     .min(1, 'Name is required')
     .max(100, 'Name must be 100 characters or fewer'),
-  email: normalizedEmail.email('Enter a valid email address').max(254, 'Email must be 254 characters or fewer'),
+  // Normalize first (trim spaces, lowercase), then check the format, so
+  // " Sharon@Example.COM " and "sharon@example.com" are treated as the same account.
+  email: normalizedEmail
+    .email('Email must be a valid email address')
+    .max(254, 'Email must be 254 characters or fewer'),
+  // Not trimmed: spaces in a password are allowed and count.
+  // bcrypt only uses the first 72 bytes, so longer passwords are rejected instead of silently cut.
   password: z
     .string({ required_error: 'Password is required', invalid_type_error: 'Password must be text' })
     .min(8, 'Password must be at least 8 characters')
-    .refine((password) => Buffer.byteLength(password, 'utf8') <= BCRYPT_MAX_BYTES, {
-      message: `Password must be ${BCRYPT_MAX_BYTES} bytes or fewer`
-    })
+    .refine((value) => Buffer.byteLength(value, 'utf8') <= 72, 'Password must be 72 bytes or fewer')
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

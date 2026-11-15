@@ -2,7 +2,7 @@ import type { RequestHandler, Response } from 'express';
 import { verifyAccessToken } from '../auth.js';
 
 /** Same body for a missing, malformed, expired or forged token, so a response never says which. */
-export const AUTH_REQUIRED_ERROR = 'Authentication required';
+export const AUTH_REQUIRED = 'Authentication required';
 
 /**
  * Express middleware for routes that need a logged-in user.
@@ -15,20 +15,20 @@ export const requireAuth: RequestHandler = (req, res, next) => {
   const [scheme, token] = header.split(' ');
 
   if (scheme !== 'Bearer' || !token) {
-    res.status(401).json({ error: AUTH_REQUIRED_ERROR });
+    res.status(401).json({ error: AUTH_REQUIRED });
     return;
   }
 
   try {
     const payload = verifyAccessToken(token);
     if (typeof payload.sub !== 'string' || payload.sub.length === 0) {
-      res.status(401).json({ error: AUTH_REQUIRED_ERROR });
+      res.status(401).json({ error: AUTH_REQUIRED });
       return;
     }
     res.locals.userId = payload.sub;
     next();
   } catch {
-    res.status(401).json({ error: AUTH_REQUIRED_ERROR });
+    res.status(401).json({ error: AUTH_REQUIRED });
   }
 };
 

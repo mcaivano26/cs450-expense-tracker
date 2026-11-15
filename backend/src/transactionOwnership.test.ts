@@ -3,7 +3,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { app, prisma } from './app.js';
 import { getJwtSecret } from './auth.js';
-import { AUTH_REQUIRED_ERROR } from './middleware/requireAuth.js';
+import { AUTH_REQUIRED } from './middleware/requireAuth.js';
 import { createTestUser, deleteTestUsers, type TestUser } from './testUsers.js';
 
 // Transaction routes use the logged-in user's id from their token: list, create, edit and summary only ever
@@ -72,7 +72,7 @@ describe('transaction routes reject requests without a valid token (401)', () =>
       const response = await send(authorization());
 
       expect(response.status).toBe(401);
-      expect(response.body).toEqual({ error: AUTH_REQUIRED_ERROR });
+      expect(response.body).toEqual({ error: AUTH_REQUIRED });
     });
   });
 
@@ -172,7 +172,7 @@ describe.runIf(dbAvailable)('transactions belong to the logged-in user (PostgreS
         .send(VALID_TRANSACTION);
 
       expect(response.status).toBe(401);
-      expect(response.body).toEqual({ error: AUTH_REQUIRED_ERROR });
+      expect(response.body).toEqual({ error: AUTH_REQUIRED });
     });
   });
 

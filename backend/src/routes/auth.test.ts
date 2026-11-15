@@ -3,9 +3,9 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import { afterAll, describe, expect, test } from 'vitest';
-import { app, prisma } from './app.js';
-import { BCRYPT_ROUNDS, JWT_ALGORITHM, TOKEN_TTL_SECONDS, getJwtSecret } from './auth.js';
-import { DUPLICATE_EMAIL_ERROR, INVALID_LOGIN_ERROR } from './routes/auth.js';
+import { app, prisma } from '../app.js';
+import { BCRYPT_ROUNDS, JWT_ALGORITHM, TOKEN_TTL_SECONDS, getJwtSecret } from '../auth.js';
+import { DUPLICATE_EMAIL, INVALID_LOGIN } from './auth.js';
 
 // Registration and login: HTTP request -> Zod validation -> bcrypt / JWT -> Prisma -> PostgreSQL.
 // The validation tests need no database. The rest need it (docker compose up -d) and are skipped when it is not running.
@@ -33,7 +33,7 @@ async function registerUser(overrides: { name?: string; email?: string; password
   const body = { name: 'Auth Test User', email: uniqueEmail('user'), password: PASSWORD, ...overrides };
   const response = await register(body);
   expect(response.status).toBe(201);
-  return { body, user: response.body.user as { id: string; name: string; email: string } };
+  return { body, user: response.body as { id: string; name: string; email: string } };
 }
 
 describe('POST /api/auth/register rejects invalid data with 400', () => {
@@ -72,9 +72,9 @@ describe.runIf(dbAvailable)('Registration and login (PostgreSQL)', () => {
       const response = await register({ name: '  Ana Lopez  ', email: `  ${email.toUpperCase()}  `, password: PASSWORD });
 
       expect(response.status).toBe(201);
-      expect(response.body.user).toEqual({ id: expect.any(String), name: 'Ana Lopez', email: email.toLowerCase() });
+      expect(response.body).toEqual({ id: expect.any(String), name: 'Ana Lopez', email: email.toLowerCase() });
 
-      const saved = await prisma.user.findUniqueOrThrow({ where: { id: response.body.user.id } });
+      const saved = await prisma.user.findUniqueOrThrow({ where: { id: response.body.id } });
       expect(saved.name).toBe('Ana Lopez');
       expect(saved.email).toBe(email.toLowerCase());
     });
@@ -160,7 +160,7 @@ describe.runIf(dbAvailable)('Registration and login (PostgreSQL)', () => {
       const response = await register({ name: 'Second', email: `  ${email.toUpperCase()} `, password: 'another-password-9' });
 
       expect(response.status).toBe(409);
-      expect(response.body).toEqual({ error: DUPLICATE_EMAIL_ERROR });
+      expect(response.body).toEqual({ error: DUPLICATE_EMAIL });
       expect(await prisma.user.count({ where: { email: { equals: email, mode: 'insensitive' } } })).toBe(1);
     });
 
@@ -230,7 +230,7 @@ describe.runIf(dbAvailable)('Registration and login (PostgreSQL)', () => {
       const response = await login({ email: uniqueEmail('nobody'), password: PASSWORD });
 
       expect(response.status).toBe(401);
-      expect(response.body).toEqual({ error: INVALID_LOGIN_ERROR });
+      expect(response.body).toEqual({ error: INVALID_LOGIN });
     });
 
     test('a wrong password gets 401 with the generic message and no token', async () => {
@@ -239,7 +239,7 @@ describe.runIf(dbAvailable)('Registration and login (PostgreSQL)', () => {
       const response = await login({ email: body.email, password: 'wrong-password-1' });
 
       expect(response.status).toBe(401);
-      expect(response.body).toEqual({ error: INVALID_LOGIN_ERROR });
+      expect(response.body).toEqual({ error: INVALID_LOGIN });
     });
 
     test('unknown email and wrong password responses are identical', async () => {
@@ -260,7 +260,7 @@ describe.runIf(dbAvailable)('Registration and login (PostgreSQL)', () => {
       const response = await login({ email, password: PASSWORD });
 
       expect(response.status).toBe(401);
-      expect(response.body).toEqual({ error: INVALID_LOGIN_ERROR });
+      expect(response.body).toEqual({ error: INVALID_LOGIN });
     });
   });
 });
