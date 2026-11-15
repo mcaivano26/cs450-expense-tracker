@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { createTransaction, fetchSummary, fetchTransactions } from './api/client.ts';
+import { createTransaction, fetchCategories, fetchSummary, fetchTransactions } from './api/client.ts';
 
 const fetchMock = vi.fn();
 
@@ -26,6 +26,32 @@ describe('fetchTransactions', () => {
     mockFetch(new Response(null, { status: 500 }));
 
     await expect(fetchTransactions()).rejects.toThrow('GET /api/transactions failed with status 500');
+  });
+});
+
+// F26B-10
+describe('fetchTransactions with a category', () => {
+  test('adds the category to the URL, encoded', async () => {
+    mockFetch(new Response(JSON.stringify([])));
+
+    await fetchTransactions('Dining & Drinks');
+    expect(fetchMock).toHaveBeenCalledWith('/api/transactions?category=Dining+%26+Drinks');
+  });
+
+  test('an empty category means all transactions (no query string)', async () => {
+    mockFetch(new Response(JSON.stringify([])));
+
+    await fetchTransactions('');
+    expect(fetchMock).toHaveBeenCalledWith('/api/transactions');
+  });
+});
+
+describe('fetchCategories', () => {
+  test('returns the category list from the API', async () => {
+    mockFetch(new Response(JSON.stringify(['Dining', 'Rent'])));
+
+    await expect(fetchCategories()).resolves.toEqual(['Dining', 'Rent']);
+    expect(fetchMock).toHaveBeenCalledWith('/api/categories');
   });
 });
 
