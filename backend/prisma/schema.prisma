@@ -9,9 +9,12 @@ datasource db {
 }
 
 model User {
-  id        String        @id @default(cuid())
-  name      String
-  email     String        @unique
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  // F26B-59: bcrypt hash of the password, never the password itself.
+  // Optional because the demo user and older users were created before sign-up existed.
+  passwordHash String?
   transactions Transaction[]
 }
 
