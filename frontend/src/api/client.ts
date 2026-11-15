@@ -8,8 +8,15 @@ async function getJson<T>(path: string): Promise<T> {
   return (await response.json()) as T;
 }
 
-export function fetchTransactions(): Promise<Transaction[]> {
-  return getJson<Transaction[]>('/api/transactions');
+/** F26B-10: pass a category to get only that category's transactions; leave it out (or '') for all. */
+export function fetchTransactions(category?: string): Promise<Transaction[]> {
+  const query = category ? `?${new URLSearchParams({ category })}` : '';
+  return getJson<Transaction[]>(`/api/transactions${query}`);
+}
+
+/** F26B-10: the categories the user has used, for the filter dropdown. */
+export function fetchCategories(): Promise<string[]> {
+  return getJson<string[]>('/api/categories');
 }
 
 export function fetchSummary(): Promise<Summary> {
