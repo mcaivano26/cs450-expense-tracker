@@ -1,21 +1,26 @@
 import { useEffect, useState } from 'react';
-import { fetchSummary, fetchTransactions } from './api/client.ts';
+import { fetchCategories, fetchSummary, fetchTransactions } from './api/client.ts';
 import type { Summary, Transaction } from './types/api.ts';
 import AddTransactionForm from './components/AddTransactionForm.tsx';
+import CategoryFilter, { ALL_CATEGORIES } from './components/CategoryFilter.tsx';
 
 export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // F26B-10: '' means "All categories".
+  const [categories, setCategories] = useState<string[]>([]);
+  const [category, setCategory] = useState(ALL_CATEGORIES);
 
   async function loadData() {
     setLoading(true);
     setError(null);
     try {
-      const [txns, sum] = await Promise.all([fetchTransactions(), fetchSummary()]);
+      const [txns, sum, cats] = await Promise.all([fetchTransactions(category), fetchSummary(), fetchCategories()]);
       setTransactions(txns);
       setSummary(sum);
+      setCategories(cats);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -30,9 +35,20 @@ export default function App() {
   /** Reloads the list and cards after a save, without the full-page "Loading…" screen. */
   async function refreshAfterSave() {
     try {
-      const [txns, sum] = await Promise.all([fetchTransactions(), fetchSummary()]);
+      const [txns, sum, cats] = await Promise.all([fetchTransactions(category), fetchSummary(), fetchCategories()]);
       setTransactions(txns);
       setSummary(sum);
+      setCategories(cats);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    }
+  }
+
+  /** F26B-10: picking a category reloads only the list. The summary cards keep showing all transactions. */
+  async function changeCategory(next: string) {
+    setCategory(next);
+    try {
+      setTransactions(await fetchTransactions(next));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     }
@@ -74,7 +90,16 @@ export default function App() {
       <AddTransactionForm onSaved={refreshAfterSave} />
 
       <div style={{ background: '#fff', borderRadius: '12px', padding: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-        {transactions.length === 0 && <p style={{ color: '#6b7280' }}>No transactions yet.</p>}
+        <CategoryFilter categories={categories} value={category} onChange={changeCategory} />
+        {transactions.length === 0 && category === ALL_CATEGORIES && <p style={{ color: '#6b7280' }}>No transactions yet.</p>}
+        {transactions.length === 0 && category !== ALL_CATEGORIES && (
+          <p style={{ color: '#6b7280' }}>
+            No transactions in "{category}".{' '}
+            <button type="button" onClick={() => changeCategory(ALL_CATEGORIES)}>
+              Show all
+            </button>
+          </p>
+        )}
         {transactions.map((tx) => (
           <div key={tx.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 0', borderBottom: '1px solid #e5e7eb' }}>
             <div>
