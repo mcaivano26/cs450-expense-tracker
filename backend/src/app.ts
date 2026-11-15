@@ -9,6 +9,7 @@ import {
 } from './schemas/transaction.js';
 import { validateBody } from './middleware/validateBody.js';
 import { AUTH_REQUIRED, getAuthUserId, rejectOwnerFields, requireAuth } from './middleware/requireAuth.js';
+import { transactionListQuerySchema } from './schemas/transactionQuery.js';
 import { buildHealthResponse, type HealthResponse } from './types/health.js';
 import { createAuthRouter } from './routes/auth.js';
 
@@ -30,17 +31,46 @@ app.get('/api/health', (_req, res) => {
 // Every route below needs `Authorization: Bearer <token>` (from POST /api/auth/login).
 // The owner is always the token's user: client-supplied owner ids are rejected, never used.
 
-app.get('/api/transactions', requireAuth, async (_req, res) => {
+// F26B-10: optional ?category=Dining shows only that category's transactions.
+app.get('/api/transactions', requireAuth, async (req, res) => {
+  const query = transactionListQuerySchema.safeParse(req.query);
+  if (query.success === false) {
+    res.status(400).json({
+      error: 'Validation failed',
+      issues: query.error.issues.map((issue) => ({ field: issue.path.join('.'), message: issue.message }))
+    });
+    return;
+  }
+  const { category } = query.data;
+
   try {
     const userId = getAuthUserId(res);
     const transactions = await prisma.transaction.findMany({
-      where: { userId },
+      // Without a category this is the same query as before: all of the user's transactions.
+      where: { userId, ...(category && { category }) },
       orderBy: { date: 'desc' }
     });
     res.json(transactions);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Could not load transactions' });
+  }
+});
+
+// F26B-10: the categories this user has used, for the filter dropdown (sorted, no duplicates).
+app.get('/api/categories', requireAuth, async (_req, res) => {
+  try {
+    const userId = getAuthUserId(res);
+    const rows = await prisma.transaction.findMany({
+      where: { userId },
+      distinct: ['category'],
+      select: { category: true },
+      orderBy: { category: 'asc' }
+    });
+    res.json(rows.map((row) => row.category));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Could not load categories' });
   }
 });
 
