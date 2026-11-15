@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from '@prisma/client';
 import express from 'express';
 import cors from 'cors';
 import {
@@ -8,9 +8,9 @@ import {
   type UpdateTransactionInput
 } from './schemas/transaction.js';
 import { validateBody } from './middleware/validateBody.js';
-import { getDemoUserId } from './demoUser.js';
+import { AUTH_REQUIRED_ERROR, getAuthUserId, rejectOwnerFields, requireAuth } from './middleware/requireAuth.js';
 import { buildHealthResponse, type HealthResponse } from './types/health.js';
-import { createAuthRouter, publicUserSelect } from './routes/auth.js';
+import { createAuthRouter } from './routes/auth.js';
 
 export const prisma = new PrismaClient();
 
@@ -21,25 +21,19 @@ app.use(express.json());
 
 app.use('/api/auth', createAuthRouter(prisma));
 
-app.get('/api/test', async (_req, res) => {
-  try {
-    // select, not the whole row: the User table now holds password hashes.
-    const users = await prisma.user.findMany({ select: publicUserSelect });
-    res.json(users);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json(error);
-  }
-});
-
+// Public: no login needed, and the response holds no user or transaction data (see types/health.ts).
+// The old /api/test debug route was removed because it listed every user's name and email to anyone.
 app.get('/api/health', (_req, res) => {
   const body: HealthResponse = buildHealthResponse();
   res.json(body);
 });
 
-app.get('/api/transactions', async (_req, res) => {
+// Every route below needs `Authorization: Bearer <token>` (from POST /api/auth/login).
+// The owner is always the token's user: client-supplied owner ids are rejected, never used.
+
+app.get('/api/transactions', requireAuth, async (_req, res) => {
   try {
-    const userId = await getDemoUserId(prisma);
+    const userId = getAuthUserId(res);
     const transactions = await prisma.transaction.findMany({
       where: { userId },
       orderBy: { date: 'desc' }
@@ -51,9 +45,9 @@ app.get('/api/transactions', async (_req, res) => {
   }
 });
 
-app.get('/api/summary', async (_req, res) => {
+app.get('/api/summary', requireAuth, async (_req, res) => {
   try {
-    const userId = await getDemoUserId(prisma);
+    const userId = getAuthUserId(res);
     const [income, expenses] = await Promise.all([
       prisma.transaction.aggregate({ where: { userId, type: 'income' }, _sum: { amount: true } }),
       prisma.transaction.aggregate({ where: { userId, type: 'expense' }, _sum: { amount: true } })
@@ -67,10 +61,10 @@ app.get('/api/summary', async (_req, res) => {
   }
 });
 
-app.post('/api/transactions', validateBody(createTransactionSchema), async (req, res) => {
+app.post('/api/transactions', requireAuth, rejectOwnerFields, validateBody(createTransactionSchema), async (req, res) => {
   const { title, amount, category, type, date, description } = req.body as CreateTransactionInput;
   try {
-    const userId = await getDemoUserId(prisma);
+    const userId = getAuthUserId(res);
     const created = await prisma.transaction.create({
       data: {
         userId,
@@ -84,13 +78,18 @@ app.post('/api/transactions', validateBody(createTransactionSchema), async (req,
     });
     res.status(201).json(created);
   } catch (error) {
+    // A valid token for an account that has since been deleted: there is no user to own the row.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+      res.status(401).json({ error: AUTH_REQUIRED_ERROR });
+      return;
+    }
     console.error(error);
     res.status(500).json({ error: 'Could not save transaction' });
   }
 });
 
 // F26B-32: edit an existing transaction.
-app.put('/api/transactions/:id', validateBody(updateTransactionSchema), async (req, res) => {
+app.put('/api/transactions/:id', requireAuth, rejectOwnerFields, validateBody(updateTransactionSchema), async (req, res) => {
   const changes = req.body as UpdateTransactionInput;
 
   if (Object.keys(changes).length === 0) {
@@ -99,9 +98,10 @@ app.put('/api/transactions/:id', validateBody(updateTransactionSchema), async (r
   }
 
   try {
-    const userId = await getDemoUserId(prisma);
+    const userId = getAuthUserId(res);
+    // Another user's transaction gets the same 404 as one that does not exist, so ids can't be probed.
     const existing = await prisma.transaction.findFirst({
-            where: { id: String(req.params.id), userId }
+      where: { id: String(req.params.id), userId }
     });
 
     if (!existing) {
@@ -111,7 +111,8 @@ app.put('/api/transactions/:id', validateBody(updateTransactionSchema), async (r
 
     const { date, description, ...rest } = changes;
     const updated = await prisma.transaction.update({
-      where: { id: existing.id },
+      // userId in the filter too, so the update can only ever touch this user's row.
+      where: { id: existing.id, userId },
       data: {
         ...rest,
         ...(date !== undefined && { date: new Date(date) }),
