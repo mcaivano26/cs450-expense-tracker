@@ -21,6 +21,7 @@ services:
       PORT: "4002"
       # TODO 1: Set database hostname to Compose service name (not localhost)
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+      JWT_SECRET: ${JWT_SECRET}
     ports:
       - "4002:4002"
     depends_on:
