@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { createTransaction, fetchCategories, fetchSummary, fetchTransactions } from './api/client.ts';
+import { createTransaction, fetchCategories, fetchMonthlySummary, fetchSummary, fetchTransactions } from './api/client.ts';
 
 const fetchMock = vi.fn();
 
@@ -62,6 +62,17 @@ describe('fetchSummary', () => {
 
     await expect(fetchSummary()).resolves.toEqual(summary);
     expect(fetchMock).toHaveBeenCalledWith('/api/summary');
+  });
+});
+
+// F26B-7
+describe('fetchMonthlySummary', () => {
+  test('asks for the given month and returns its totals', async () => {
+    const monthly = { month: '2026-11', totalIncome: 2000, totalExpenses: 75.5, net: 1924.5, transactionCount: 3 };
+    mockFetch(new Response(JSON.stringify(monthly)));
+
+    await expect(fetchMonthlySummary('2026-11')).resolves.toEqual(monthly);
+    expect(fetchMock).toHaveBeenCalledWith('/api/summary/monthly?month=2026-11');
   });
 });
 
