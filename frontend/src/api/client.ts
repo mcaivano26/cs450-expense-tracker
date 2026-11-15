@@ -1,4 +1,4 @@
-import type { Summary, Transaction, FieldIssue, NewTransaction } from '../types/api.ts';
+import type { Summary, MonthlySummary, Transaction, FieldIssue, NewTransaction } from '../types/api.ts';
 
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(path);
@@ -21,6 +21,11 @@ export function fetchCategories(): Promise<string[]> {
 
 export function fetchSummary(): Promise<Summary> {
   return getJson<Summary>('/api/summary');
+}
+
+/** F26B-7: income, expenses and net for one month, written "YYYY-MM". */
+export function fetchMonthlySummary(month: string): Promise<MonthlySummary> {
+  return getJson<MonthlySummary>(`/api/summary/monthly?${new URLSearchParams({ month })}`);
 }
 
 /** Saves an expense or income. Returns null on success, or the list of field problems. */
