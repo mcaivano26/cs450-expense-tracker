@@ -145,15 +145,10 @@ describe.runIf(dbAvailable)('Registration and login (PostgreSQL)', () => {
       }
     });
 
-    test('GET /api/test lists users without password hashes', async () => {
-      const { user } = await registerUser();
-      const saved = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
-
+    test('the old /api/test route that listed every user is gone', async () => {
       const response = await request(app).get('/api/test');
 
-      expect(response.status).toBe(200);
-      expect(response.text).not.toContain('passwordHash');
-      expect(response.text).not.toContain(saved.passwordHash);
+      expect(response.status).toBe(404);
     });
   });
 
