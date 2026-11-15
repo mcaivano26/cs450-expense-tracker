@@ -20,6 +20,8 @@ app.use(cors());
 app.use(express.json());
 app.use(createAuthRouter(prisma));
 
+app.use('/api/auth', createAuthRouter(prisma));
+
 app.get('/api/test', async (_req, res) => {
   try {
     // F26B-59: select only public fields so password hashes are never sent.

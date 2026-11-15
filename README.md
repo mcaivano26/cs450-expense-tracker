@@ -183,6 +183,21 @@ Full diagrams and decisions: [docs/architecture.md](docs/architecture.md)
 | Startup Order | `api` waits for `db` healthcheck | Process running != DB connection ready |
 | Network Bridge | `web` reaches `api:4002` | Docker Compose virtual network DNS |
 
+## Authentication (register and login)
+
+Set `JWT_SECRET` in `backend/.env` (and in the root `.env` for Docker) to a long random value, for example
+the output of `openssl rand -hex 32`. Then apply the new migration from inside `backend/`: `npx prisma migrate dev`.
+
+| Endpoint | Body | Success | Failure |
+| --- | --- | --- | --- |
+| `POST /api/auth/register` | `name`, `email`, `password` (8+ characters, 72 bytes max) | `201` with `user` (`id`, `name`, `email`) | `400` invalid data, `409` email already registered |
+| `POST /api/auth/login` | `email`, `password` | `200` with `token`, `tokenType: "Bearer"`, `expiresIn: 3600` | `401` `Invalid email or password` (same for unknown email and wrong password) |
+
+- Emails are trimmed and lowercased, so `Ann@Example.com` and `ann@example.com` are one account.
+- Passwords are stored only as bcrypt hashes (cost 10) and never returned by the API.
+- Tokens are HS256 JWTs: `sub` is the user id, plus `email`; they expire after one hour.
+- Tests: `backend/src/auth.test.ts`. The transaction routes still use the demo user; requiring a token on them is a later ticket.
+
 ## Seeding and sample data
 
 Start the database first (from the project root):
