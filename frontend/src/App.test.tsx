@@ -1,11 +1,13 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import App from './App.tsx';
-import { fetchCategories, fetchSummary, fetchTransactions } from './api/client.ts';
+import { fetchCategories, fetchMonthlySummary, fetchSummary, fetchTransactions } from './api/client.ts';
+import { currentMonth, shiftMonth } from './utils/month.ts';
 
 vi.mock('./api/client.ts', () => ({
   createTransaction: vi.fn(),
   fetchCategories: vi.fn(),
+  fetchMonthlySummary: vi.fn(),
   fetchSummary: vi.fn(),
   fetchTransactions: vi.fn()
 }));
@@ -13,10 +15,15 @@ vi.mock('./api/client.ts', () => ({
 const fetchSummaryMock = vi.mocked(fetchSummary);
 const fetchTransactionsMock = vi.mocked(fetchTransactions);
 const fetchCategoriesMock = vi.mocked(fetchCategories);
+const fetchMonthlySummaryMock = vi.mocked(fetchMonthlySummary);
+
+const emptyMonth = (month: string) => ({ month, totalIncome: 0, totalExpenses: 0, net: 0, transactionCount: 0 });
 
 beforeEach(() => {
   // F26B-10: App also loads the category list; the existing tests don't need any categories.
   fetchCategoriesMock.mockResolvedValue([]);
+  // F26B-7: App also loads the monthly cards; by default the month is empty.
+  fetchMonthlySummaryMock.mockImplementation(async (month: string) => emptyMonth(month));
 });
 
 afterEach(() => {
@@ -24,6 +31,7 @@ afterEach(() => {
   fetchSummaryMock.mockReset();
   fetchTransactionsMock.mockReset();
   fetchCategoriesMock.mockReset();
+  fetchMonthlySummaryMock.mockReset();
 });
 
 describe('App', () => {
@@ -120,5 +128,56 @@ describe('App category filter', () => {
 
     expect(await screen.findByText('Coffee')).toBeTruthy();
     expect(screen.getByLabelText('Filter by category')).toHaveProperty('value', '');
+  });
+});
+
+// F26B-7: monthly summary cards.
+describe('App monthly summary cards', () => {
+  const thisMonth = currentMonth();
+
+  function renderApp() {
+    fetchSummaryMock.mockResolvedValue({ totalIncome: 0, totalExpenses: 0, net: 0 });
+    fetchTransactionsMock.mockResolvedValue([]);
+    render(<App />);
+  }
+
+  test("opens on the current month and shows that month's income, expenses and net", async () => {
+    fetchMonthlySummaryMock.mockResolvedValueOnce({ month: thisMonth, totalIncome: 2000, totalExpenses: 75.5, net: 1924.5, transactionCount: 3 });
+    renderApp();
+
+    expect(await screen.findByText('$2000.00')).toBeTruthy();
+    expect(screen.getByText('$75.50')).toBeTruthy();
+    expect(screen.getByText('$1924.50')).toBeTruthy();
+    expect(fetchMonthlySummaryMock).toHaveBeenCalledWith(thisMonth);
+  });
+
+  test('Previous month loads and shows the previous month', async () => {
+    renderApp();
+    await screen.findByRole('heading', { name: 'Expense Tracker' });
+    const previous = shiftMonth(thisMonth, -1);
+    fetchMonthlySummaryMock.mockResolvedValueOnce({ month: previous, totalIncome: 0, totalExpenses: 100, net: -100, transactionCount: 1 });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Previous month' }));
+
+    expect(await screen.findByText('$-100.00')).toBeTruthy();
+    expect(fetchMonthlySummaryMock).toHaveBeenLastCalledWith(previous);
+  });
+
+  test('Next month moves forward one month', async () => {
+    renderApp();
+    await screen.findByRole('heading', { name: 'Expense Tracker' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next month' }));
+
+    await waitFor(() => expect(fetchMonthlySummaryMock).toHaveBeenLastCalledWith(shiftMonth(thisMonth, 1)));
+  });
+
+  test('a month with no transactions shows zero totals and a clear message', async () => {
+    fetchMonthlySummaryMock.mockResolvedValueOnce(emptyMonth('2025-01'));
+    renderApp();
+
+    expect(await screen.findByText('No transactions in January 2025.')).toBeTruthy();
+    // All three monthly cards show $0.00 (the all-time cards are $0.00 too in this test).
+    expect(screen.getAllByText('$0.00').length).toBeGreaterThanOrEqual(3);
   });
 });
