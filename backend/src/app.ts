@@ -10,7 +10,7 @@ import {
 import { validateBody } from './middleware/validateBody.js';
 import { getDemoUserId } from './demoUser.js';
 import { buildHealthResponse, type HealthResponse } from './types/health.js';
-import { createAuthRouter, publicUserSelect } from './routes/auth.js';
+import { createAuthRouter, publicUserFields } from './routes/auth.js';
 
 export const prisma = new PrismaClient();
 
@@ -18,17 +18,18 @@ export const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(createAuthRouter(prisma));
 
 app.use('/api/auth', createAuthRouter(prisma));
 
 app.get('/api/test', async (_req, res) => {
   try {
-    // select, not the whole row: the User table now holds password hashes.
-    const users = await prisma.user.findMany({ select: publicUserSelect });
+    // F26B-59: select only public fields so password hashes are never sent.
+    const users = await prisma.user.findMany({ select: publicUserFields });
     res.json(users);
   } catch (error) {
     console.error(error);
-    res.status(500).json(error);
+    res.status(500).json({ error: 'Could not load users' });
   }
 });
 
