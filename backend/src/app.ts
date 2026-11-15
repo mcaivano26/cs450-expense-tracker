@@ -10,6 +10,7 @@ import {
 import { validateBody } from './middleware/validateBody.js';
 import { AUTH_REQUIRED, getAuthUserId, rejectOwnerFields, requireAuth } from './middleware/requireAuth.js';
 import { transactionListQuerySchema } from './schemas/transactionQuery.js';
+import { currentMonth, monthlySummaryQuerySchema, monthRange } from './schemas/monthQuery.js';
 import { buildHealthResponse, type HealthResponse } from './types/health.js';
 import { createAuthRouter } from './routes/auth.js';
 
@@ -87,6 +88,42 @@ app.get('/api/summary', requireAuth, async (_req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Could not load summary' });
+  }
+});
+
+// F26B-7: income, expenses and net for one month, e.g. GET /api/summary/monthly?month=2026-11
+app.get('/api/summary/monthly', requireAuth, async (req, res) => {
+  const query = monthlySummaryQuerySchema.safeParse(req.query);
+  if (query.success === false) {
+    res.status(400).json({
+      error: 'Validation failed',
+      issues: query.error.issues.map((issue) => ({ field: issue.path.join('.'), message: issue.message }))
+    });
+    return;
+  }
+  const month = query.data.month ?? currentMonth();
+  const { start, end } = monthRange(month);
+
+  try {
+    const userId = getAuthUserId(res);
+    const inMonth = { userId, date: { gte: start, lt: end } };
+    const [income, expenses] = await Promise.all([
+      prisma.transaction.aggregate({ where: { ...inMonth, type: 'income' }, _sum: { amount: true }, _count: true }),
+      prisma.transaction.aggregate({ where: { ...inMonth, type: 'expense' }, _sum: { amount: true }, _count: true })
+    ]);
+    // SUM is null when there are no rows, so ?? 0 turns an empty month into zero totals.
+    const totalIncome = income._sum.amount ?? 0;
+    const totalExpenses = expenses._sum.amount ?? 0;
+    res.json({
+      month,
+      totalIncome,
+      totalExpenses,
+      net: totalIncome - totalExpenses,
+      transactionCount: income._count + expenses._count
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Could not load monthly summary' });
   }
 });
 
