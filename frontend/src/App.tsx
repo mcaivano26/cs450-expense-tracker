@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { fetchCategories, fetchSummary, fetchTransactions } from './api/client.ts';
-import type { Summary, Transaction } from './types/api.ts';
+import { fetchCategories, fetchMonthlySummary, fetchSummary, fetchTransactions } from './api/client.ts';
+import type { MonthlySummary, Summary, Transaction } from './types/api.ts';
 import AddTransactionForm from './components/AddTransactionForm.tsx';
 import CategoryFilter, { ALL_CATEGORIES } from './components/CategoryFilter.tsx';
+import MonthlySummaryCards from './components/MonthlySummaryCards.tsx';
+import { currentMonth, shiftMonth } from './utils/month.ts';
 
 export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -12,15 +14,24 @@ export default function App() {
   // F26B-10: '' means "All categories".
   const [categories, setCategories] = useState<string[]>([]);
   const [category, setCategory] = useState(ALL_CATEGORIES);
+  // F26B-7: the month shown in the monthly cards, as "YYYY-MM". Starts on this month.
+  const [month, setMonth] = useState(currentMonth);
+  const [monthlySummary, setMonthlySummary] = useState<MonthlySummary | null>(null);
 
   async function loadData() {
     setLoading(true);
     setError(null);
     try {
-      const [txns, sum, cats] = await Promise.all([fetchTransactions(category), fetchSummary(), fetchCategories()]);
+      const [txns, sum, cats, monthly] = await Promise.all([
+        fetchTransactions(category),
+        fetchSummary(),
+        fetchCategories(),
+        fetchMonthlySummary(month)
+      ]);
       setTransactions(txns);
       setSummary(sum);
       setCategories(cats);
+      setMonthlySummary(monthly);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -35,10 +46,17 @@ export default function App() {
   /** Reloads the list and cards after a save, without the full-page "Loading…" screen. */
   async function refreshAfterSave() {
     try {
-      const [txns, sum, cats] = await Promise.all([fetchTransactions(category), fetchSummary(), fetchCategories()]);
+      // F26B-7: the monthly cards are reloaded too, so a new transaction shows up in this month's totals.
+      const [txns, sum, cats, monthly] = await Promise.all([
+        fetchTransactions(category),
+        fetchSummary(),
+        fetchCategories(),
+        fetchMonthlySummary(month)
+      ]);
       setTransactions(txns);
       setSummary(sum);
       setCategories(cats);
+      setMonthlySummary(monthly);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     }
@@ -54,11 +72,21 @@ export default function App() {
     }
   }
 
+  /** F26B-7: moving to another month reloads only the monthly cards. */
+  async function changeMonth(next: string) {
+    setMonth(next);
+    try {
+      setMonthlySummary(await fetchMonthlySummary(next));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    }
+  }
+
   if (loading) {
     return <div style={{ padding: '2rem' }}>Loading…</div>;
   }
 
-  if (error || !summary) {
+  if (error || !summary || !monthlySummary) {
     return (
       <div style={{ padding: '2rem', color: '#991b1b' }}>
         <p>Could not load data: {error}</p>
@@ -72,6 +100,13 @@ export default function App() {
     <div style={{ fontFamily: 'Arial, sans-serif', padding: '2rem', background: '#f8fafc', minHeight: '100vh' }}>
       <h1 style={{ marginBottom: '1rem' }}>Expense Tracker</h1>
 
+      <MonthlySummaryCards
+        summary={monthlySummary}
+        onPreviousMonth={() => changeMonth(shiftMonth(month, -1))}
+        onNextMonth={() => changeMonth(shiftMonth(month, 1))}
+      />
+
+      <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.25rem' }}>All time</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         <div style={{ background: '#d1fae5', padding: '1rem', borderRadius: '12px' }}>
           <div style={{ color: '#065f46' }}>Income</div>
