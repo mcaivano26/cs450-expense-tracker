@@ -1,6 +1,5 @@
 import { Router } from 'express';
-import { type PrismaClient } from '@prisma/client';
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { Prisma, type PrismaClient } from '@prisma/client';
 import { validateBody } from '../middleware/validateBody.js';
 import { loginSchema, registerSchema, type LoginInput, type RegisterInput } from '../schemas/auth.js';
 import {
@@ -43,7 +42,7 @@ export function createAuthRouter(prisma: PrismaClient): Router {
     } catch (error) {
       // Two sign-ups with the same email at the same moment: the database's unique
       // constraint stops the second one (Prisma error P2002), and it gets the same 409.
-      if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         res.status(409).json({ error: DUPLICATE_EMAIL });
         return;
       }

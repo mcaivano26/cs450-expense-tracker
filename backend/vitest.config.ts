@@ -5,6 +5,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     fileParallelism: false,
+    isolate: false,
     // Test-only signing key for the auth tests. Never use this value outside tests.
     env: {
       JWT_SECRET: 'test-only-jwt-secret-not-for-production'

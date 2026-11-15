@@ -1,5 +1,4 @@
 import { Prisma, PrismaClient } from '@prisma/client';
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import express from 'express';
 import cors from 'cors';
 import {
@@ -11,7 +10,7 @@ import {
 import { validateBody } from './middleware/validateBody.js';
 import { AUTH_REQUIRED, getAuthUserId, rejectOwnerFields, requireAuth } from './middleware/requireAuth.js';
 import { buildHealthResponse, type HealthResponse } from './types/health.js';
-import { createAuthRouter, publicUserFields } from './routes/auth.js';
+import { createAuthRouter } from './routes/auth.js';
 
 export const prisma = new PrismaClient();
 
@@ -22,17 +21,6 @@ app.use(express.json());
 app.use(createAuthRouter(prisma));
 
 app.use('/api/auth', createAuthRouter(prisma));
-
-app.get('/api/test', async (_req, res) => {
-  try {
-    // F26B-59: select only public fields so password hashes are never sent.
-    const users = await prisma.user.findMany({ select: publicUserFields });
-    res.json(users);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Could not load users' });
-  }
-});
 
 app.get('/api/health', (_req, res) => {
   const body: HealthResponse = buildHealthResponse();
@@ -90,7 +78,7 @@ app.post('/api/transactions', requireAuth, rejectOwnerFields, validateBody(creat
     res.status(201).json(created);
   } catch (error) {
     // A valid token for an account that has since been deleted: there is no user to own the row.
-    if (error instanceof PrismaClientKnownRequestError && error.code === 'P2003') {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
       res.status(401).json({ error: AUTH_REQUIRED });
       return;
     }
