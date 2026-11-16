@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { createTransaction, fetchCategories, fetchMonthlySummary, fetchSummary, fetchTransactions, login, register } from './api/client.ts';
+import { createTransaction, fetchCategories, fetchMonthlySummary, fetchSummary, fetchTransactions, login, register, updateTransaction } from './api/client.ts';
 import { clearSession, getSession, saveSession, SESSION_EXPIRED_EVENT } from './auth/session.ts';
 
 const fetchMock = vi.fn();
@@ -140,6 +140,32 @@ describe('signed-in requests', () => {
     await createTransaction({ type: 'expense', title: 'Coffee', amount: 4.5, category: 'Food', date: '2026-11-14', description: '' });
     const [, options] = fetchMock.mock.calls[0];
     expect(options.headers).toEqual({ 'Content-Type': 'application/json', Authorization: 'Bearer abc.def.ghi' });
+  });
+
+  // F26B-70: editing used to send no token, so every edit got 401 once login was required.
+  test('updateTransaction sends the token too', async () => {
+    saveSession({ token: 'abc.def.ghi', email: 'sharon@example.com' });
+    mockFetch(new Response(null, { status: 200 }));
+
+    await expect(
+      updateTransaction('tx-1', { type: 'expense', title: 'Coffee', amount: 4.5, category: 'Food', date: '2026-11-14', description: '' })
+    ).resolves.toBeNull();
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe('/api/transactions/tx-1');
+    expect(options.method).toBe('PUT');
+    expect(options.headers).toEqual({ 'Content-Type': 'application/json', Authorization: 'Bearer abc.def.ghi' });
+  });
+
+  test('a 401 while editing signs the user out', async () => {
+    saveSession({ token: 'expired.token', email: 'sharon@example.com' });
+    const onExpired = vi.fn();
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    mockFetch(new Response(JSON.stringify({ error: 'Authentication required' }), { status: 401 }));
+
+    await updateTransaction('tx-1', { type: 'expense', title: 'Coffee', amount: 4.5, category: 'Food', date: '2026-11-14', description: '' });
+    expect(getSession()).toBeNull();
+    expect(onExpired).toHaveBeenCalledOnce();
+    window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
   });
 
   test('a 401 forgets the token and tells the app the session expired', async () => {

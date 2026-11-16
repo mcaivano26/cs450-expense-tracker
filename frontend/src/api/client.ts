@@ -69,7 +69,8 @@ export async function createTransaction(input: NewTransaction): Promise<FieldIss
 export async function updateTransaction(id: string, input: NewTransaction): Promise<FieldIssue[] | null> {
   const response = await fetch(`/api/transactions/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    // F26B-70: send the login token like every other protected request; without it every edit got 401.
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify({
       ...input,
       // API expects a full date-time
@@ -79,6 +80,7 @@ export async function updateTransaction(id: string, input: NewTransaction): Prom
   });
 
   if (response.ok) return null;
+  handleUnauthorized(response);
   if (response.status === 400) {
     const body = await response.json();
     return body.issues ?? [{ field: '', message: body.error ?? 'Validation failed' }];
