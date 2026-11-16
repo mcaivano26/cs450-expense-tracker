@@ -148,7 +148,6 @@ export default function App({ userEmail, onLogOut }: AppProps = {}) {
 
       <div style={{ background: '#fff', borderRadius: '12px', padding: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
         {editingTransaction && <EditTransactionForm key={editingTransaction.id} transaction={editingTransaction} onSaved={refreshAfterSave} onCancel={() => setEditingTransaction(null)} />}
-        {transactions.length === 0 && <p style={{ color: '#6b7280' }}>No transactions yet.</p>}
         <CategoryFilter categories={categories} value={category} onChange={changeCategory} />
         {transactions.length === 0 && category === ALL_CATEGORIES && <p style={{ color: '#6b7280' }}>No transactions yet.</p>}
         {transactions.length === 0 && category !== ALL_CATEGORIES && (
