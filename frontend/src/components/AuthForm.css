@@ -1,0 +1,226 @@
+/* Login page: split card. Left = light teal panel with the tabs, right = the form.
+   Colors are lighter shades of the logo's teal (#0f766e). */
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: #f0fdfa;
+  font-family: Arial, sans-serif;
+}
+
+.auth-card {
+  display: flex;
+  width: 100%;
+  max-width: 860px;
+  min-height: 520px;
+  background: #fff;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(15, 118, 110, 0.12);
+}
+
+/* Left panel: soft teal diagonal bands */
+.auth-side {
+  position: relative;
+  flex: 0 0 38%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 0.75rem;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0 22%, transparent 22% 44%, rgba(255, 255, 255, 0.25) 44% 62%, transparent 62%),
+    linear-gradient(45deg, #ccfbf1 0%, #99f6e4 55%, #5eead4 100%);
+}
+
+/* The tabs stick out of the panel into the white side, like a pull tab */
+.auth-tab {
+  width: 78%;
+  padding: 1rem 1.5rem;
+  border: none;
+  border-radius: 40px 0 0 40px;
+  background: transparent;
+  color: #0f766e;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+}
+
+.auth-tab[aria-selected='true'] {
+  background: #fff;
+  color: #134e4a;
+}
+
+.auth-tab:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: -4px;
+}
+
+/* Right side: the form */
+.auth-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2.5rem 3.5rem;
+}
+
+.auth-logo {
+  display: block;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 0.75rem;
+}
+
+.auth-title {
+  margin: 0;
+  text-align: center;
+  color: #0f766e;
+  font-size: 2rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.auth-subtitle {
+  margin: 0.25rem 0 1.75rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.auth-notice {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  background: #fef3c7;
+}
+
+.auth-field {
+  margin-bottom: 1.25rem;
+}
+
+/* Icon + input on one underlined row */
+.auth-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-bottom: 2px solid #d1d5db;
+  color: #9ca3af;
+}
+
+.auth-input-row:focus-within {
+  border-bottom-color: #14b8a6;
+  color: #0f766e;
+}
+
+.auth-input-row svg {
+  flex: 0 0 20px;
+}
+
+.auth-input-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.6rem 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #111827;
+  font-size: 1rem;
+}
+
+.auth-error {
+  margin: 0.3rem 0 0;
+  color: #991b1b;
+  font-size: 0.85rem;
+}
+
+.auth-hint {
+  display: block;
+  margin-top: 0.3rem;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.auth-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.auth-switch {
+  padding: 0;
+  border: none;
+  background: none;
+  color: #0f766e;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.auth-switch:hover {
+  text-decoration: underline;
+}
+
+.auth-submit {
+  padding: 0.75rem 2.25rem;
+  border: none;
+  border-radius: 999px;
+  background: #14b8a6;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(20, 184, 166, 0.3);
+}
+
+.auth-submit:hover {
+  background: #0d9488;
+}
+
+.auth-submit:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* Hidden on screen but still read by screen readers (and by the tests) */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Phones: stack the tabs on top of the form */
+@media (max-width: 640px) {
+  .auth-card {
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .auth-side {
+    flex-direction: row;
+    align-items: flex-end;
+    padding-top: 1rem;
+  }
+
+  .auth-tab {
+    width: auto;
+    flex: 1;
+    border-radius: 16px 16px 0 0;
+    text-align: center;
+  }
+
+  .auth-form {
+    padding: 2rem 1.5rem;
+  }
+}

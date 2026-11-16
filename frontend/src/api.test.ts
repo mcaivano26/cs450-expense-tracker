@@ -1,11 +1,13 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { createTransaction, fetchCategories, fetchMonthlySummary, fetchSummary, fetchTransactions } from './api/client.ts';
+import { createTransaction, fetchCategories, fetchMonthlySummary, fetchSummary, fetchTransactions, login, register } from './api/client.ts';
+import { clearSession, getSession, saveSession, SESSION_EXPIRED_EVENT } from './auth/session.ts';
 
 const fetchMock = vi.fn();
 
 afterEach(() => {
   vi.unstubAllGlobals();
   fetchMock.mockReset();
+  clearSession();
 });
 
 function mockFetch(response: Response) {
@@ -19,7 +21,7 @@ describe('fetchTransactions', () => {
     mockFetch(new Response(JSON.stringify(transactions)));
 
     await expect(fetchTransactions()).resolves.toEqual(transactions);
-    expect(fetchMock).toHaveBeenCalledWith('/api/transactions');
+    expect(fetchMock).toHaveBeenCalledWith('/api/transactions', { headers: {} });
   });
 
   test('rejects an unsuccessful response', async () => {
@@ -35,14 +37,14 @@ describe('fetchTransactions with a category', () => {
     mockFetch(new Response(JSON.stringify([])));
 
     await fetchTransactions('Dining & Drinks');
-    expect(fetchMock).toHaveBeenCalledWith('/api/transactions?category=Dining+%26+Drinks');
+    expect(fetchMock).toHaveBeenCalledWith('/api/transactions?category=Dining+%26+Drinks', { headers: {} });
   });
 
   test('an empty category means all transactions (no query string)', async () => {
     mockFetch(new Response(JSON.stringify([])));
 
     await fetchTransactions('');
-    expect(fetchMock).toHaveBeenCalledWith('/api/transactions');
+    expect(fetchMock).toHaveBeenCalledWith('/api/transactions', { headers: {} });
   });
 });
 
@@ -51,7 +53,7 @@ describe('fetchCategories', () => {
     mockFetch(new Response(JSON.stringify(['Dining', 'Rent'])));
 
     await expect(fetchCategories()).resolves.toEqual(['Dining', 'Rent']);
-    expect(fetchMock).toHaveBeenCalledWith('/api/categories');
+    expect(fetchMock).toHaveBeenCalledWith('/api/categories', { headers: {} });
   });
 });
 
@@ -61,7 +63,7 @@ describe('fetchSummary', () => {
     mockFetch(new Response(JSON.stringify(summary)));
 
     await expect(fetchSummary()).resolves.toEqual(summary);
-    expect(fetchMock).toHaveBeenCalledWith('/api/summary');
+    expect(fetchMock).toHaveBeenCalledWith('/api/summary', { headers: {} });
   });
 });
 
@@ -72,7 +74,7 @@ describe('fetchMonthlySummary', () => {
     mockFetch(new Response(JSON.stringify(monthly)));
 
     await expect(fetchMonthlySummary('2026-11')).resolves.toEqual(monthly);
-    expect(fetchMock).toHaveBeenCalledWith('/api/summary/monthly?month=2026-11');
+    expect(fetchMock).toHaveBeenCalledWith('/api/summary/monthly?month=2026-11', { headers: {} });
   });
 });
 
@@ -118,5 +120,83 @@ describe('createTransaction', () => {
     await expect(createTransaction(transaction)).resolves.toEqual([
       { field: '', message: 'Something went wrong saving. Is the backend running?' }
     ]);
+  });
+});
+
+// Login page: the token is sent with requests, and a 401 signs the user out.
+describe('signed-in requests', () => {
+  test('send the saved token as a Bearer Authorization header', async () => {
+    saveSession({ token: 'abc.def.ghi', email: 'sharon@example.com' });
+    mockFetch(new Response(JSON.stringify([])));
+
+    await fetchTransactions();
+    expect(fetchMock).toHaveBeenCalledWith('/api/transactions', { headers: { Authorization: 'Bearer abc.def.ghi' } });
+  });
+
+  test('createTransaction sends the token too', async () => {
+    saveSession({ token: 'abc.def.ghi', email: 'sharon@example.com' });
+    mockFetch(new Response(null, { status: 201 }));
+
+    await createTransaction({ type: 'expense', title: 'Coffee', amount: 4.5, category: 'Food', date: '2026-11-14', description: '' });
+    const [, options] = fetchMock.mock.calls[0];
+    expect(options.headers).toEqual({ 'Content-Type': 'application/json', Authorization: 'Bearer abc.def.ghi' });
+  });
+
+  test('a 401 forgets the token and tells the app the session expired', async () => {
+    saveSession({ token: 'expired.token', email: 'sharon@example.com' });
+    const onExpired = vi.fn();
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    mockFetch(new Response(JSON.stringify({ error: 'Authentication required' }), { status: 401 }));
+
+    await expect(fetchSummary()).rejects.toThrow('status 401');
+    expect(getSession()).toBeNull();
+    expect(onExpired).toHaveBeenCalledOnce();
+    window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+  });
+});
+
+describe('login', () => {
+  test('returns the token on success', async () => {
+    mockFetch(new Response(JSON.stringify({ token: 'abc.def.ghi', tokenType: 'Bearer', expiresIn: 3600 })));
+
+    await expect(login('sharon@example.com', 'correct horse')).resolves.toEqual({ ok: true, token: 'abc.def.ghi' });
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'sharon@example.com', password: 'correct horse' })
+    });
+  });
+
+  test('returns the error message for a wrong email or password (401)', async () => {
+    mockFetch(new Response(JSON.stringify({ error: 'Invalid email or password' }), { status: 401 }));
+
+    await expect(login('sharon@example.com', 'wrong')).resolves.toEqual({
+      ok: false,
+      issues: [{ field: '', message: 'Invalid email or password' }]
+    });
+  });
+});
+
+describe('register', () => {
+  test('returns ok when the account is created (201)', async () => {
+    mockFetch(new Response(JSON.stringify({ id: '1', name: 'Sharon', email: 'sharon@example.com' }), { status: 201 }));
+
+    await expect(register('Sharon', 'sharon@example.com', 'correct horse')).resolves.toEqual({ ok: true });
+  });
+
+  test('returns field errors from a 400', async () => {
+    const issues = [{ field: 'password', message: 'Password must be at least 8 characters' }];
+    mockFetch(new Response(JSON.stringify({ error: 'Validation failed', issues }), { status: 400 }));
+
+    await expect(register('Sharon', 'sharon@example.com', 'short')).resolves.toEqual({ ok: false, issues });
+  });
+
+  test('returns the duplicate email message from a 409', async () => {
+    mockFetch(new Response(JSON.stringify({ error: 'An account with this email already exists' }), { status: 409 }));
+
+    await expect(register('Sharon', 'sharon@example.com', 'correct horse')).resolves.toEqual({
+      ok: false,
+      issues: [{ field: '', message: 'An account with this email already exists' }]
+    });
   });
 });
