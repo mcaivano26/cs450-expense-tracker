@@ -6,7 +6,13 @@ import CategoryFilter, { ALL_CATEGORIES } from './components/CategoryFilter.tsx'
 import MonthlySummaryCards from './components/MonthlySummaryCards.tsx';
 import { currentMonth, shiftMonth } from './utils/month.ts';
 
-export default function App() {
+interface AppProps {
+  /** Login page: who is signed in, shown in the header. */
+  userEmail?: string;
+  onLogOut?: () => void;
+}
+
+export default function App({ userEmail, onLogOut }: AppProps = {}) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,7 +104,20 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: 'Arial, sans-serif', padding: '2rem', background: '#f8fafc', minHeight: '100vh' }}>
-      <h1 style={{ marginBottom: '1rem' }}>Expense Tracker</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h1 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <img src="/logo.png" alt="" width={36} height={36} />
+          Expense Tracker
+        </h1>
+        {onLogOut && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ color: '#6b7280' }}>Signed in as {userEmail}</span>
+            <button type="button" onClick={onLogOut}>
+              Log out
+            </button>
+          </div>
+        )}
+      </div>
 
       <MonthlySummaryCards
         summary={monthlySummary}
