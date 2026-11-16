@@ -85,11 +85,19 @@ describe('AuthForm', () => {
 
   test('the tabs on the left switch between sign in and create account', () => {
     render(<AuthForm onSignedIn={vi.fn()} />);
+    expect(screen.getByRole('tablist', { name: 'Sign in or create an account' })).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Sign in' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('heading', { name: 'Sign in' })).toBeTruthy();
+    expect(screen.getByText('Expense Tracker')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Email')).toHaveProperty('autocomplete', 'email');
+    expect(screen.getByPlaceholderText('Password')).toHaveProperty('autocomplete', 'current-password');
 
     fireEvent.click(screen.getByRole('tab', { name: 'Create account' }));
     expect(screen.getByRole('tab', { name: 'Create account' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('heading', { name: 'Create account' })).toBeTruthy();
     expect(screen.getByLabelText('Name')).toBeTruthy();
+    expect(screen.getByText('At least 8 characters.')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Password')).toHaveProperty('autocomplete', 'new-password');
 
     fireEvent.click(screen.getByRole('tab', { name: 'Sign in' }));
     expect(screen.queryByLabelText('Name')).toBeNull();

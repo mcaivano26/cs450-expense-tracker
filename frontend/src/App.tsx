@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { fetchCategories, fetchMonthlySummary, fetchSummary, fetchTransactions } from './api/client.ts';
 import type { MonthlySummary, Summary, Transaction } from './types/api.ts';
 import AddTransactionForm from './components/AddTransactionForm.tsx';
+import EditTransactionForm from './components/EditTransactionForm.tsx';
 import CategoryFilter, { ALL_CATEGORIES } from './components/CategoryFilter.tsx';
 import MonthlySummaryCards from './components/MonthlySummaryCards.tsx';
 import { currentMonth, shiftMonth } from './utils/month.ts';
@@ -17,6 +18,7 @@ export default function App({ userEmail, onLogOut }: AppProps = {}) {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   // F26B-10: '' means "All categories".
   const [categories, setCategories] = useState<string[]>([]);
   const [category, setCategory] = useState(ALL_CATEGORIES);
@@ -61,6 +63,7 @@ export default function App({ userEmail, onLogOut }: AppProps = {}) {
       ]);
       setTransactions(txns);
       setSummary(sum);
+      setEditingTransaction(null);
       setCategories(cats);
       setMonthlySummary(monthly);
     } catch (err) {
@@ -144,6 +147,7 @@ export default function App({ userEmail, onLogOut }: AppProps = {}) {
       <AddTransactionForm onSaved={refreshAfterSave} />
 
       <div style={{ background: '#fff', borderRadius: '12px', padding: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+        {editingTransaction && <EditTransactionForm key={editingTransaction.id} transaction={editingTransaction} onSaved={refreshAfterSave} onCancel={() => setEditingTransaction(null)} />}
         <CategoryFilter categories={categories} value={category} onChange={changeCategory} />
         {transactions.length === 0 && category === ALL_CATEGORIES && <p style={{ color: '#6b7280' }}>No transactions yet.</p>}
         {transactions.length === 0 && category !== ALL_CATEGORIES && (
@@ -162,8 +166,11 @@ export default function App({ userEmail, onLogOut }: AppProps = {}) {
                 {tx.category} · {new Date(tx.date).toLocaleDateString(undefined, { timeZone: 'UTC' })}
               </div>
             </div>
-            <div style={{ color: tx.type === 'expense' ? '#dc2626' : '#16a34a', fontWeight: 700 }}>
-              {tx.type === 'expense' ? '-' : '+'}${tx.amount.toFixed(2)}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ color: tx.type === 'expense' ? '#dc2626' : '#16a34a', fontWeight: 700 }}>
+                {tx.type === 'expense' ? '-' : '+'}${tx.amount.toFixed(2)}
+              </div>
+              <button type="button" onClick={() => setEditingTransaction(tx)} style={{ background: '#fff', color: '#2563eb', border: '1px solid #93c5fd', borderRadius: 6, padding: '0.35rem 0.65rem', cursor: 'pointer' }}>Edit</button>
             </div>
           </div>
         ))}
