@@ -1,26 +1,33 @@
-import { afterAll, describe, expect, test } from 'vitest';
+import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import request from 'supertest';
 import { app, prisma } from './app.js';
+import { createTestUser, deleteTestUsers, type TestUser } from './testUsers.js';
 
 // F26B-53: verify the acceptance criteria of F26B-32 (Edit a transaction) end to end:
 // HTTP request -> Zod validation -> Prisma -> PostgreSQL, then read back what was saved.
 // These tests need the database (docker compose up -d) and are skipped when it is not running.
 
 const dbAvailable = await prisma.$queryRaw`SELECT 1`.then(() => true, () => false);
-const createdIds: string[] = [];
+// Each run uses its own logged-in user, removed (with its transactions) in afterAll.
+const TEST_EMAIL_DOMAIN = 'edit-test.example';
+let owner: TestUser;
 
 async function createTransaction() {
   const response = await request(app)
     .post('/api/transactions')
+    .set('Authorization', owner.authorization)
     .send({ title: 'F26B-53 test coffee', amount: 4.5, category: 'Dining', type: 'expense', date: '2026-10-01T12:00:00Z' });
   expect(response.status).toBe(201);
-  createdIds.push(response.body.id);
   return response.body as { id: string; title: string; amount: number; category: string; type: string; date: string };
 }
 
 describe.runIf(dbAvailable)('F26B-32 Edit a transaction (PostgreSQL)', () => {
+  beforeAll(async () => {
+    owner = await createTestUser(prisma, TEST_EMAIL_DOMAIN, 'editor');
+  });
+
   afterAll(async () => {
-    await prisma.transaction.deleteMany({ where: { id: { in: createdIds } } });
+    await deleteTestUsers(prisma, TEST_EMAIL_DOMAIN);
   });
 
   test('a valid edit is saved and returned', async () => {
@@ -28,6 +35,7 @@ describe.runIf(dbAvailable)('F26B-32 Edit a transaction (PostgreSQL)', () => {
 
     const response = await request(app)
       .put(`/api/transactions/${original.id}`)
+      .set('Authorization', owner.authorization)
       .send({ title: 'F26B-53 test lunch', amount: 12.75 });
 
     expect(response.status).toBe(200);
@@ -41,7 +49,7 @@ describe.runIf(dbAvailable)('F26B-32 Edit a transaction (PostgreSQL)', () => {
   test('fields that were not sent stay the same', async () => {
     const original = await createTransaction();
 
-    await request(app).put(`/api/transactions/${original.id}`).send({ amount: 9 });
+    await request(app).put(`/api/transactions/${original.id}`).set('Authorization', owner.authorization).send({ amount: 9 });
 
     const saved = await prisma.transaction.findUniqueOrThrow({ where: { id: original.id } });
     expect(saved.amount).toBe(9);
@@ -53,20 +61,20 @@ describe.runIf(dbAvailable)('F26B-32 Edit a transaction (PostgreSQL)', () => {
 
   test('the edited values show up in the transaction list', async () => {
     const original = await createTransaction();
-    await request(app).put(`/api/transactions/${original.id}`).send({ category: 'Groceries' });
+    await request(app).put(`/api/transactions/${original.id}`).set('Authorization', owner.authorization).send({ category: 'Groceries' });
 
-    const list = await request(app).get('/api/transactions');
+    const list = await request(app).get('/api/transactions').set('Authorization', owner.authorization);
     const row = list.body.find((t: { id: string }) => t.id === original.id);
     expect(row.category).toBe('Groceries');
   });
 
   test('changing expense to income moves the amount in the summary', async () => {
     const original = await createTransaction();
-    const before = (await request(app).get('/api/summary')).body;
+    const before = (await request(app).get('/api/summary').set('Authorization', owner.authorization)).body;
 
-    await request(app).put(`/api/transactions/${original.id}`).send({ type: 'income' });
+    await request(app).put(`/api/transactions/${original.id}`).set('Authorization', owner.authorization).send({ type: 'income' });
 
-    const after = (await request(app).get('/api/summary')).body;
+    const after = (await request(app).get('/api/summary').set('Authorization', owner.authorization)).body;
     expect(after.totalIncome).toBeCloseTo(before.totalIncome + original.amount, 2);
     expect(after.totalExpenses).toBeCloseTo(before.totalExpenses - original.amount, 2);
   });
@@ -76,6 +84,7 @@ describe.runIf(dbAvailable)('F26B-32 Edit a transaction (PostgreSQL)', () => {
 
     const response = await request(app)
       .put(`/api/transactions/${original.id}`)
+      .set('Authorization', owner.authorization)
       .send({ title: '', amount: -5 });
 
     expect(response.status).toBe(400);
@@ -90,17 +99,17 @@ describe.runIf(dbAvailable)('F26B-32 Edit a transaction (PostgreSQL)', () => {
   test('boundary: an amount of 0 is rejected, exactly 1,000,000 is saved', async () => {
     const original = await createTransaction();
 
-    const zero = await request(app).put(`/api/transactions/${original.id}`).send({ amount: 0 });
+    const zero = await request(app).put(`/api/transactions/${original.id}`).set('Authorization', owner.authorization).send({ amount: 0 });
     expect(zero.status).toBe(400);
 
-    const max = await request(app).put(`/api/transactions/${original.id}`).send({ amount: 1_000_000 });
+    const max = await request(app).put(`/api/transactions/${original.id}`).set('Authorization', owner.authorization).send({ amount: 1_000_000 });
     expect(max.status).toBe(200);
     const saved = await prisma.transaction.findUniqueOrThrow({ where: { id: original.id } });
     expect(saved.amount).toBe(1_000_000);
   });
 
   test('editing a transaction that does not exist returns 404', async () => {
-    const response = await request(app).put('/api/transactions/does-not-exist').send({ title: 'Coffee' });
+    const response = await request(app).put('/api/transactions/does-not-exist').set('Authorization', owner.authorization).send({ title: 'Coffee' });
     expect(response.status).toBe(404);
     expect(response.body.error).toBe('Transaction not found');
   });

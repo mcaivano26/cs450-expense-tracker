@@ -16,6 +16,12 @@ export interface Summary {
   net: number;
 }
 
+/** F26B-7: totals for one month, from GET /api/summary/monthly?month=YYYY-MM */
+export interface MonthlySummary extends Summary {
+  month: string;
+  transactionCount: number;
+}
+
 /** What the Add Transaction form sends. amount is undefined when the box is empty. */
 export interface NewTransaction {
   type: TransactionType;

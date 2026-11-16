@@ -90,3 +90,8 @@ with the updated .env.example.
 Used ChatGPT Codex.
 Prompted to create frontend UI for the transactions PUT request. Created a new edit transaction form component. Then prompted to create a shared transaction form component to be wrapped by add and edit forms, to reduce code redundancy.
 Ran backend and frontend and did several simple tests, including invalid inputs. Invalid inputs were rejected and successful updates updated all components accordingly. Seems to be functional.
+
+## 2026-11-14 Max Caivano Assignment 2
+ChatGPT Codex.
+Asked to generate tests for the frontend. Generated tests for the client api. Asked to also generate tests for tsx components. Added more tests to main file and generated a separate one for the transaction form file.
+All generated tests passed. Produced a warning suggesting to add isolate: false to config, which I did.

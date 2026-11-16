@@ -143,7 +143,7 @@ npm --prefix frontend run dev     # terminal 2
 ### Troubleshooting
 
 - **"Cannot GET /" at http://localhost:4002** is expected. The backend has no route at `/`; its routes are
-  `/api/health`, `/api/transactions` and `/api/summary`. Open http://localhost:4002/api/health instead.
+  `/api/health`, `/api/auth/*`, `/api/transactions` and `/api/summary`. Open http://localhost:4002/api/health instead.
 - **"Could not find Prisma Schema"** means the Prisma command ran from the repo root. Run it from inside `backend/`.
 - **"the attribute `version` is obsolete"** from `docker compose up` is a harmless warning; Compose v2 ignores that field.
 
@@ -182,6 +182,34 @@ Full diagrams and decisions: [docs/architecture.md](docs/architecture.md)
 |---|---|---|
 | Startup Order | `api` waits for `db` healthcheck | Process running != DB connection ready |
 | Network Bridge | `web` reaches `api:4002` | Docker Compose virtual network DNS |
+
+## Authentication (register and login)
+
+Set `JWT_SECRET` in `backend/.env` (and in the root `.env` for Docker) to a long random value, for example
+the output of `openssl rand -hex 32`. Then apply the new migration from inside `backend/`: `npx prisma migrate dev`.
+
+| Endpoint | Body | Success | Failure |
+| --- | --- | --- | --- |
+| `POST /api/auth/register` | `name`, `email`, `password` (8+ characters, 72 bytes max) | `201` with `user` (`id`, `name`, `email`) | `400` invalid data, `409` email already registered |
+| `POST /api/auth/login` | `email`, `password` | `200` with `token`, `tokenType: "Bearer"`, `expiresIn: 3600` | `401` `Invalid email or password` (same for unknown email and wrong password) |
+
+- Emails are trimmed and lowercased, so `Ann@Example.com` and `ann@example.com` are one account.
+- Passwords are stored only as bcrypt hashes (cost 10) and never returned by the API.
+- Tokens are HS256 JWTs: `sub` is the user id, plus `email`; they expire after one hour.
+- Tests: `backend/src/auth.test.ts`.
+
+### Protected routes
+
+`GET/POST /api/transactions`, `PUT /api/transactions/:id` and `GET /api/summary` need the header
+`Authorization: Bearer <token>`; without a valid token they return `401 Authentication required`.
+
+- Every list, create, edit and summary uses the user id inside the token, never one sent by the client.
+  A body with `userId` (or `user`) is rejected with `400`.
+- Editing another user's transaction returns `404 Transaction not found`, the same as an id that does not exist.
+- `GET /api/health` stays public and returns only status fields. The old `/api/test` route, which listed
+  every user, was removed.
+- The seeded sample data belongs to the demo user, which has no password, so it no longer shows up through the API.
+- Tests: `backend/src/transactionOwnership.test.ts`.
 
 ## Seeding and sample data
 

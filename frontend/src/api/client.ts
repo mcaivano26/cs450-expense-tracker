@@ -1,4 +1,4 @@
-import type { Summary, Transaction, FieldIssue, NewTransaction } from '../types/api.ts';
+import type { Summary, MonthlySummary, Transaction, FieldIssue, NewTransaction } from '../types/api.ts';
 
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(path);
@@ -8,12 +8,24 @@ async function getJson<T>(path: string): Promise<T> {
   return (await response.json()) as T;
 }
 
-export function fetchTransactions(): Promise<Transaction[]> {
-  return getJson<Transaction[]>('/api/transactions');
+/** F26B-10: pass a category to get only that category's transactions; leave it out (or '') for all. */
+export function fetchTransactions(category?: string): Promise<Transaction[]> {
+  const query = category ? `?${new URLSearchParams({ category })}` : '';
+  return getJson<Transaction[]>(`/api/transactions${query}`);
+}
+
+/** F26B-10: the categories the user has used, for the filter dropdown. */
+export function fetchCategories(): Promise<string[]> {
+  return getJson<string[]>('/api/categories');
 }
 
 export function fetchSummary(): Promise<Summary> {
   return getJson<Summary>('/api/summary');
+}
+
+/** F26B-7: income, expenses and net for one month, written "YYYY-MM". */
+export function fetchMonthlySummary(month: string): Promise<MonthlySummary> {
+  return getJson<MonthlySummary>(`/api/summary/monthly?${new URLSearchParams({ month })}`);
 }
 
 /** Saves an expense or income. Returns null on success, or the list of field problems. */

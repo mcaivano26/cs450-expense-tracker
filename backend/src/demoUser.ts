@@ -1,8 +1,8 @@
 import type { PrismaClient } from '@prisma/client';
 
 /**
- * There is no login yet, so every transaction belongs to one demo user.
- * When auth is added, replace this with the logged-in user's id.
+ * Owner of the seeded sample data (prisma/seed.ts). The API no longer uses this:
+ * every transaction route uses the logged-in user's id from their token instead.
  */
 export const DEMO_USER_EMAIL = 'demo@expense-tracker.local';
 

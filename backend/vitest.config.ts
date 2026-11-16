@@ -4,6 +4,11 @@ import { defineConfig } from 'vitest/config';
 // so test files run one at a time instead of in parallel to keep their row counts from interfering.
 export default defineConfig({
   test: {
-    fileParallelism: false
+    fileParallelism: false,
+    isolate: false,
+    // Test-only signing key for the auth tests. Never use this value outside tests.
+    env: {
+      JWT_SECRET: 'test-only-jwt-secret-not-for-production'
+    }
   }
 });

@@ -6,19 +6,29 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "lint": "eslint ."
   },
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^26.6.6",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.39.5",
+    "globals": "^17.14.0",
+    "jsdom": "^26.1.0",
     "typescript": "^5.7.2",
-    "vite": "^7.3.6"
+    "typescript-eslint": "^8.72.2",
+    "vite": "^7.3.6",
+    "vitest": "^5.1.0"
   },
   "allowScripts": {
     "esbuild": true
