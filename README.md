@@ -57,6 +57,10 @@ cd cs450-expense-tracker
 
 ### Configure and start the application
 
+To run the whole app (frontend, backend and PostgreSQL) in Docker with one command,
+see [Run with Docker](#run-with-docker). The steps below run the backend and frontend
+on your machine instead, with only the database in Docker.
+
 Run these commands from the project root:
 
 ```bash
@@ -170,11 +174,15 @@ Full diagrams and decisions: [docs/architecture.md](docs/architecture.md)
 
 ## Run with Docker
 
-1. `cp .env.example .env`
+This starts all three containers: `db` (PostgreSQL 16), `api` (backend on port 4002)
+and `web` (frontend on port 5175). No other setup is needed: the `api` container waits
+for the database health check and applies the Prisma migrations when it starts.
+
+1. `cp .env.example .env` (set `JWT_SECRET` to a long random string)
 2. `docker compose up --build`
-3. Access UI: http://localhost:5175
+3. Access UI: http://localhost:5175 and create an account on the sign-in page
 4. Verify API: `curl http://localhost:4002/api/health`
-5. Shutdown: `docker compose down`
+5. Shutdown: `docker compose down` (add `-v` to also delete the database volume)
 
 ### Diagnostics & Verification Log
 

@@ -7,7 +7,9 @@ export default defineConfig({
   server: {
     port: 5175,
     proxy: {
-      '/api': 'http://localhost:4002'
+      // Locally the backend is on localhost:4002. In Docker Compose, localhost is this frontend container,
+      // so docker-compose.yml sets API_PROXY_TARGET=http://api:4002 (the backend service's name).
+      '/api': process.env.API_PROXY_TARGET ?? 'http://localhost:4002'
     }
   }
 });
